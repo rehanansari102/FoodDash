@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  rpc GetUserAddress (GetUserAddressRequest) returns (GetUserAddressResponse);
+}
+
+message GetUserAddressRequest {
+  string userId = 1;
+  string addressId = 2;
+}
+
+message GetUserAddressResponse {
+  string addressId = 1;
+  string street = 2;
+  string city = 3;
+  string country = 4;
+  double lat = 5;
+  double lng = 6;
+}

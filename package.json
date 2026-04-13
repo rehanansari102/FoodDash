@@ -1,0 +1,28 @@
+{
+  "name": "food-dash",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "docker-compose up -d",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "infra:up": "docker-compose up -d",
+    "infra:down": "docker-compose down",
+    "infra:logs": "docker-compose logs -f"
+  },
+  "devDependencies": {
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.4",
+    "express": "^4.21.2"
+  }
+}

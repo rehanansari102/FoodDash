@@ -1,0 +1,43 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+@Schema({ _id: false })
+export class RestaurantAddress {
+  @Prop({ required: true }) street: string;
+  @Prop({ required: true }) city: string;
+  @Prop({ required: true }) country: string;
+}
+
+// GeoJSON Point — required for MongoDB 2dsphere index
+@Schema({ _id: false })
+export class GeoPoint {
+  @Prop({ type: String, enum: ['Point'], default: 'Point' })
+  type: string;
+
+  // [longitude, latitude] — GeoJSON order (note: reversed from lat/lng!)
+  @Prop({ type: [Number], required: true })
+  coordinates: [number, number];
+}
+
+@Schema({ timestamps: true })
+export class Restaurant {
+  @Prop({ required: true }) ownerId: string;
+  @Prop({ required: true }) name: string;
+  @Prop() description: string;
+  @Prop({ type: [String], default: [] }) cuisineTypes: string[];
+  @Prop({ type: RestaurantAddress }) address: RestaurantAddress;
+  @Prop({ type: GeoPoint }) location: GeoPoint;
+  @Prop() imageUrl: string;
+  @Prop({ default: true }) isOpen: boolean;
+  @Prop({ default: true }) isActive: boolean;
+  @Prop({ default: 0 }) rating: number;
+  @Prop({ default: 0 }) reviewCount: number;
+}
+
+export type RestaurantDocument = Restaurant & Document;
+export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);
+
+// 2dsphere index — enables geospatial queries ($near, $geoWithin)
+RestaurantSchema.index({ location: '2dsphere' });
+// Index for fast owner lookups
+RestaurantSchema.index({ ownerId: 1 });

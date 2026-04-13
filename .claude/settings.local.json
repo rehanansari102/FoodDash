@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @food-dash/auth-service build)",
+      "Bash(rm -f tsconfig.tsbuildinfo)",
+      "Bash(node_modules/.bin/tsc --listFiles)",
+      "Bash(node_modules/.bin/tsc)",
+      "Bash(node_modules/.bin/nest build:*)",
+      "Bash(node_modules/.bin/nest info:*)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(pnpm --filter @food-dash/logger add -D @types/express)",
+      "Bash(pnpm --filter @food-dash/api-gateway add jsonwebtoken nestjs-pino)",
+      "Bash(pnpm --filter @food-dash/api-gateway add -D @types/jsonwebtoken)",
+      "Bash(pnpm --filter @food-dash/user-service add nestjs-pino)",
+      "Bash(pnpm --filter @food-dash/user-service add -D @types/express @types/uuid)",
+      "Bash(pnpm --filter @food-dash/logger add pino-pretty)",
+      "Bash(docker exec:*)",
+      "Bash(curl -X POST http://localhost:3001/auth/register -H \"Content-Type: application/json\" -d \"{\"\"email\"\":\"\"test@example.com\"\",\"\"password\"\":\"\"Password123!\"\"}\")",
+      "Bash(curl -X POST http://localhost:3000/api/auth/register -H \"Content-Type: application/json\" -d \"{\"\"email\"\":\"\"test2@example.com\"\",\"\"password\"\":\"\"Password123!\"\"}\" --max-time 10)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s http://localhost:3000/api/users/me -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTgzNDNkNi0zZjUzLTQ5N2ItOTNhMC00MDNhMmIzZjk0M2UiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJyb2xlIjoiY3VzdG9tZXIiLCJpYXQiOjE3NzM4NzQ0NjksImV4cCI6MTc3Mzg3NTM2OX0.QoxaeZo1jsKfd3iA1PnLIi8q6FLWhuFbgx5ZTR5LHLU\")",
+      "Bash(pnpm install:*)",
+      "Bash(xargs grep:*)"
+    ]
+  }
+}

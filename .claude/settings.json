@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker build:*)",
+      "Read(//c/Users/DELL/**)",
+      "Bash(grep -l \"@food-dash/logger\" d:/Projects/FoodDash/apps/*/tsconfig.json)",
+      "Bash(npm info:*)",
+      "Bash(node -e \"console.log\\(require\\('d:/Projects/FoodDash/node_modules/express/package.json'\\).version\\)\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\DELL",
+      "d:\\Projects\\FoodDash\\apps\\*",
+      "d:\\Projects\\FoodDash\\apps\\api-gateway"
+    ]
+  }
+}
