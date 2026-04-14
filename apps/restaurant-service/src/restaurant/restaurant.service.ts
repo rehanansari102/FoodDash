@@ -100,4 +100,30 @@ export class RestaurantService {
 
     return updated as unknown as Restaurant;
   }
+
+  async toggle(id: string, ownerId: string): Promise<{ isOpen: boolean }> {
+    const restaurant = await this.restaurantModel.findById(id).lean();
+    if (!restaurant) throw new NotFoundException('Restaurant not found');
+    if ((restaurant as any).ownerId !== ownerId) throw new ForbiddenException('Not your restaurant');
+
+    const updated = await this.restaurantModel
+      .findByIdAndUpdate(id, [{ $set: { isOpen: { $not: '$isOpen' } } }], { new: true, lean: true })
+      .exec();
+
+    await this.redisService.del(`restaurant:detail:${id}`);
+    return { isOpen: (updated as any).isOpen };
+  }
+
+  async setOpeningHours(id: string, ownerId: string, hours: { day: number; open?: string; close?: string; isClosed?: boolean }[]): Promise<Restaurant> {
+    const restaurant = await this.restaurantModel.findById(id).lean();
+    if (!restaurant) throw new NotFoundException('Restaurant not found');
+    if ((restaurant as any).ownerId !== ownerId) throw new ForbiddenException('Not your restaurant');
+
+    const updated = await this.restaurantModel
+      .findByIdAndUpdate(id, { $set: { openingHours: hours } }, { new: true, lean: true })
+      .exec();
+
+    await this.redisService.del(`restaurant:detail:${id}`);
+    return updated as unknown as Restaurant;
+  }
 }

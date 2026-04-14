@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch,
+  Controller, Get, Post, Patch, Put,
   Body, Param, Query, Req,
   ForbiddenException,
 } from '@nestjs/common';
@@ -8,6 +8,7 @@ import { RestaurantService } from './restaurant.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { NearbyQueryDto } from './dto/nearby-query.dto';
+import { DayHoursDto } from './dto/create-restaurant.dto';
 
 interface AuthRequest extends Request {
   headers: Request['headers'] & {
@@ -47,5 +48,23 @@ export class RestaurantController {
   @Patch(':id')
   update(@Req() req: AuthRequest, @Param('id') id: string, @Body() dto: UpdateRestaurantDto) {
     return this.restaurantService.update(id, req.headers['x-user-id'], dto);
+  }
+
+  @Patch(':id/toggle')
+  toggle(@Req() req: AuthRequest, @Param('id') id: string) {
+    const role = req.headers['x-user-role'];
+    if (role !== 'restaurant_owner' && role !== 'admin') {
+      throw new ForbiddenException('Only restaurant owners can toggle status');
+    }
+    return this.restaurantService.toggle(id, req.headers['x-user-id']);
+  }
+
+  @Put(':id/hours')
+  setHours(@Req() req: AuthRequest, @Param('id') id: string, @Body() body: { hours: DayHoursDto[] }) {
+    const role = req.headers['x-user-role'];
+    if (role !== 'restaurant_owner' && role !== 'admin') {
+      throw new ForbiddenException('Only restaurant owners can set opening hours');
+    }
+    return this.restaurantService.setOpeningHours(id, req.headers['x-user-id'], body.hours);
   }
 }

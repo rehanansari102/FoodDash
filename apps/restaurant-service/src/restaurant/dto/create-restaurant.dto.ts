@@ -1,5 +1,5 @@
 import {
-  IsString, IsOptional, IsArray, IsNumber,
+  IsString, IsOptional, IsArray, IsNumber, IsBoolean,
   IsUrl, MaxLength, Min, Max, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -24,4 +24,13 @@ export class CreateRestaurantDto {
   @IsNumber() @Min(-180) @Max(180) lng: number;
 
   @IsOptional() @IsUrl({ protocols: ['https'], require_protocol: true }) imageUrl?: string;
+  @IsOptional() @IsNumber() @Min(0) minimumOrder?: number;
+  @IsOptional() @IsNumber() @Min(0) deliveryFee?: number;
+}
+
+export class DayHoursDto {
+  @IsNumber() @Min(0) @Max(6) day: number;
+  @IsOptional() @IsString() open?: string;
+  @IsOptional() @IsString() close?: string;
+  @IsOptional() @IsBoolean() isClosed?: boolean;
 }

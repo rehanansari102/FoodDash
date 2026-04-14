@@ -63,4 +63,17 @@ export class MenuController {
     }
     return this.menuService.deleteItem(restaurantId, itemId);
   }
+
+  @Patch(':restaurantId/items/:itemId/toggle')
+  toggleItem(
+    @Req() req: AuthRequest,
+    @Param('restaurantId') restaurantId: string,
+    @Param('itemId') itemId: string,
+  ) {
+    const role = req.headers['x-user-role'];
+    if (role !== 'restaurant_owner' && role !== 'admin') {
+      throw new ForbiddenException('Only restaurant owners can manage menus');
+    }
+    return this.menuService.toggleAvailability(restaurantId, itemId);
+  }
 }

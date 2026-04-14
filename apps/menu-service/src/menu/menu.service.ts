@@ -60,4 +60,16 @@ export class MenuService {
 
     await this.redisService.del(`menu:${restaurantId}`);
   }
+
+  async toggleAvailability(restaurantId: string, itemId: string): Promise<{ isAvailable: boolean }> {
+    const item = await this.menuItemModel.findOneAndUpdate(
+      { _id: itemId, restaurantId },
+      [{ $set: { isAvailable: { $not: '$isAvailable' } } }],
+      { new: true, lean: true },
+    ).exec();
+    if (!item) throw new NotFoundException('Menu item not found');
+
+    await this.redisService.del(`menu:${restaurantId}`);
+    return { isAvailable: (item as any).isAvailable };
+  }
 }

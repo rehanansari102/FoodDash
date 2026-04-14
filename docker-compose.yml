@@ -113,6 +113,49 @@ services:
       redis:
         condition: service_healthy
 
+  restaurant-service:
+    build:
+      context: .
+      dockerfile: apps/restaurant-service/Dockerfile
+    container_name: fd-restaurant-service
+    restart: unless-stopped
+    environment:
+      PORT: 3003
+      NODE_ENV: development
+      SERVICE_NAME: restaurant-service
+      MONGODB_URI: mongodb://mongodb:27017/fooddash_restaurants?replicaSet=rs0&directConnection=true
+      REDIS_URL: redis://redis:6379
+      RESTAURANT_CACHE_TTL: 600
+      NEARBY_CACHE_TTL: 120
+    ports:
+      - '3003:3003'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  menu-service:
+    build:
+      context: .
+      dockerfile: apps/menu-service/Dockerfile
+    container_name: fd-menu-service
+    restart: unless-stopped
+    environment:
+      PORT: 3004
+      NODE_ENV: development
+      SERVICE_NAME: menu-service
+      MONGODB_URI: mongodb://mongodb:27017/fooddash_menus?replicaSet=rs0&directConnection=true
+      REDIS_URL: redis://redis:6379
+      MENU_CACHE_TTL: 600
+    ports:
+      - '3004:3004'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: .
@@ -124,9 +167,11 @@ services:
       NODE_ENV: production
       SERVICE_NAME: api-gateway
       JWT_SECRET: change-me-in-production
-      AUTH_SERVICE_URL: http://auth-service:3001
-      AUTH_SERVICE_GRPC_URL: auth-service:50051
-      USER_SERVICE_URL: http://user-service:3002
+      AUTH_SERVICE_URL: http://fd-auth-service:3001
+      AUTH_SERVICE_GRPC_URL: fd-auth-service:50051
+      USER_SERVICE_URL: http://fd-user-service:3002
+      RESTAURANT_SERVICE_URL: http://fd-restaurant-service:3003
+      MENU_SERVICE_URL: http://fd-menu-service:3004
       REDIS_URL: redis://redis:6379
       RATE_LIMIT_MAX: 60
       RATE_LIMIT_WINDOW_MS: 60000
@@ -135,6 +180,8 @@ services:
     depends_on:
       - auth-service
       - user-service
+      - restaurant-service
+      - menu-service
 
   # frontend:
   #   build:
