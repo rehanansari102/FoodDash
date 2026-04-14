@@ -2,18 +2,23 @@ import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { randomBytes, createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserRole } from './entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RedisService } from './redis.service';
+import { MailService } from './mail.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +28,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private redisService: RedisService,
+    private mailService: MailService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -30,12 +36,27 @@ export class AuthService {
     if (existing) throw new ConflictException('Email already in use');
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
+
+    const plainToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(plainToken).digest('hex');
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const user = this.userRepo.create({
       email: dto.email,
       passwordHash,
       role: dto.role ?? UserRole.CUSTOMER,
+      isEmailVerified: false,
+      emailVerificationToken: tokenHash,
+      emailVerificationExpires: expires,
     });
     await this.userRepo.save(user);
+
+    const appUrl = this.configService.get('APP_URL', 'http://localhost:3010');
+    const verifyLink = `${appUrl}/verify-email?token=${plainToken}`;
+    // Fire-and-forget — don't block registration if email fails
+    this.mailService.sendEmailVerification(user.email, verifyLink).catch((err) =>
+      console.error('Failed to send verification email:', err),
+    );
 
     return this.generateTokenPair(user);
   }
@@ -79,6 +100,78 @@ export class AuthService {
     return this.generateTokenPair(user);
   }
 
+  async verifyEmail(token: string) {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const user = await this.userRepo.findOne({
+      where: { emailVerificationToken: tokenHash },
+    });
+
+    if (!user || !user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
+      throw new BadRequestException('Verification link is invalid or has expired');
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await this.userRepo.save(user);
+
+    return this.generateTokenPair(user);
+  }
+
+  async resendVerification(userId: string): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+    if (user.isEmailVerified) throw new BadRequestException('Email is already verified');
+
+    const plainToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(plainToken).digest('hex');
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    user.emailVerificationToken = tokenHash;
+    user.emailVerificationExpires = expires;
+    await this.userRepo.save(user);
+
+    const appUrl = this.configService.get('APP_URL', 'http://localhost:3010');
+    const verifyLink = `${appUrl}/verify-email?token=${plainToken}`;
+    await this.mailService.sendEmailVerification(user.email, verifyLink);
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+    const user = await this.userRepo.findOne({ where: { email: dto.email } });
+    // Always respond with success to avoid email enumeration
+    if (!user) return;
+    const plainToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(plainToken).digest('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    user.passwordResetToken = tokenHash;
+    user.passwordResetExpires = expires;
+    await this.userRepo.save(user);
+
+    const appUrl = this.configService.get('APP_URL', 'http://localhost:3010');
+    const resetLink = `${appUrl}/reset-password?token=${plainToken}`;
+    await this.mailService.sendPasswordReset(user.email, resetLink);
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+    const tokenHash = createHash('sha256').update(dto.token).digest('hex');
+    const user = await this.userRepo.findOne({
+      where: { passwordResetToken: tokenHash },
+    });
+
+    if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+      throw new BadRequestException('Reset token is invalid or has expired');
+    }
+
+    user.passwordHash = await bcrypt.hash(dto.password, 12);
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    await this.userRepo.save(user);
+
+    // Revoke all active sessions for this user
+    await this.tokenRepo.update({ userId: user.id, revoked: false }, { revoked: true });
+  }
+
   async logout(userId: string, accessToken: string) {
     // Revoke all refresh tokens for this user
     await this.tokenRepo.update({ userId, revoked: false }, { revoked: true });
@@ -120,6 +213,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: user.role,
+      isEmailVerified: user.isEmailVerified,
     });
 
     const refreshExpiresIn = this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d');

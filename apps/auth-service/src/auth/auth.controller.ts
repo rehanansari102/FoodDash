@@ -1,7 +1,9 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
+  Query,
   Res,
   Req,
   HttpCode,
@@ -12,6 +14,8 @@ import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -57,6 +61,39 @@ export class AuthController {
 
     await this.authService.logout(userId, accessToken);
     res.clearCookie('refresh_token', COOKIE_OPTIONS);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(dto);
+    // Always return the same message to prevent email enumeration
+    return { message: 'If that email exists, a reset link has been sent.' };
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto);
+    return { message: 'Password updated successfully. Please log in.' };
+  }
+
+  @Get('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Query('token') token: string) {
+    if (!token) return { success: false, message: 'Missing token' };
+    const tokens = await this.authService.verifyEmail(token);
+    return { success: true, message: 'Email verified successfully.', ...tokens };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(@Req() req: Request) {
+    // x-user-id is injected by the API Gateway after JWT auth
+    const userId = (req.headers as Record<string, string>)['x-user-id'];
+    if (!userId) return { message: 'Please log in to resend verification.' };
+    await this.authService.resendVerification(userId);
+    return { message: 'Verification email sent.' };
   }
 
   private setTokenCookies(res: Response, accessToken: string, refreshToken: string) {
