@@ -76,16 +76,13 @@ services:
       dockerfile: apps/auth-service/Dockerfile
     container_name: fd-auth-service
     restart: unless-stopped
+    env_file:
+      - ./apps/auth-service/.env
     environment:
-      PORT: 3001
-      GRPC_PORT: 50051
-      NODE_ENV: production
-      SERVICE_NAME: auth-service
+      # Override localhost URLs from .env with Docker service hostnames
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/fooddash_auth
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: change-me-in-production
-      JWT_ACCESS_EXPIRES_IN: 24h
-      JWT_REFRESH_EXPIRES_IN: 7d
+      NODE_ENV: development
     ports:
       - '3001:3001'
       - '50051:50051'
