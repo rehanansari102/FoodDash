@@ -15,13 +15,23 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 }
 
 const STATUS_COLOR: Record<OrderStatus, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  CONFIRMED: 'bg-blue-100 text-blue-700',
-  PREPARING: 'bg-blue-100 text-blue-700',
-  READY: 'bg-purple-100 text-purple-700',
-  PICKED_UP: 'bg-indigo-100 text-indigo-700',
-  DELIVERED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
+  PENDING: 'bg-amber-100 text-amber-700 border border-amber-200',
+  CONFIRMED: 'bg-blue-100 text-blue-700 border border-blue-200',
+  PREPARING: 'bg-violet-100 text-violet-700 border border-violet-200',
+  READY: 'bg-purple-100 text-purple-700 border border-purple-200',
+  PICKED_UP: 'bg-indigo-100 text-indigo-700 border border-indigo-200',
+  DELIVERED: 'bg-green-100 text-green-700 border border-green-200',
+  CANCELLED: 'bg-red-100 text-red-700 border border-red-200',
+}
+
+const STATUS_TOP: Record<OrderStatus, string> = {
+  PENDING: 'bg-amber-400', CONFIRMED: 'bg-blue-500', PREPARING: 'bg-violet-500',
+  READY: 'bg-purple-500', PICKED_UP: 'bg-indigo-500', DELIVERED: 'bg-green-500', CANCELLED: 'bg-red-400',
+}
+
+const STATUS_ICON: Record<OrderStatus, string> = {
+  PENDING: '🕐', CONFIRMED: '✅', PREPARING: '👨‍🍳',
+  READY: '📦', PICKED_UP: '🛵', DELIVERED: '🎉', CANCELLED: '❌',
 }
 
 // Next valid statuses a restaurant owner can advance to
@@ -137,54 +147,60 @@ export default function RestaurantOrdersClient({ restaurants }: { restaurants: R
           {displayed.map(order => {
             const nextStatus = OWNER_NEXT[order.status]
             return (
-              <div key={order._id}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-                {/* Order header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">
-                      Order #{order._id.slice(-8).toUpperCase()}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                      })}
-                    </p>
+              <div key={order._id} className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className={`h-1 w-full ${STATUS_TOP[order.status]}`} />
+                <div className="bg-white p-5 space-y-3">
+                  {/* Order header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span>{STATUS_ICON[order.status]}</span>
+                        <p className="font-extrabold text-gray-900 text-sm">
+                          Order #{order._id.slice(-8).toUpperCase()}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_COLOR[order.status]}`}>
+                      {STATUS_LABEL[order.status]}
+                    </span>
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_COLOR[order.status]}`}>
-                    {STATUS_LABEL[order.status]}
-                  </span>
-                </div>
 
-                {/* Items */}
-                <div className="text-sm text-gray-600 space-y-0.5">
-                  {order.items.map(item => (
-                    <p key={item.menuItemId}>
-                      {item.name} × {item.quantity}
-                      <span className="text-gray-400 ml-1">₹{(item.price * item.quantity).toFixed(0)}</span>
-                    </p>
-                  ))}
-                </div>
+                  {/* Items */}
+                  <div className="text-sm text-gray-600 space-y-0.5 bg-gray-50 rounded-xl p-3">
+                    {order.items.map(item => (
+                      <p key={item.menuItemId} className="flex justify-between">
+                        <span className="font-medium">{item.name} × {item.quantity}</span>
+                        <span className="font-semibold text-gray-700">₨{(item.price * item.quantity).toFixed(0)}</span>
+                      </p>
+                    ))}
+                  </div>
 
-                {/* Delivery info */}
-                <p className="text-xs text-gray-400">
-                  📍 {order.deliveryAddress.street}, {order.deliveryAddress.city}
-                </p>
-                {order.notes && (
-                  <p className="text-xs text-gray-500 italic">Note: {order.notes}</p>
-                )}
-
-                {/* Total + action */}
-                <div className="flex items-center justify-between border-t border-gray-50 pt-3">
-                  <p className="font-bold text-gray-900">₹{order.total.toFixed(0)}</p>
-                  {nextStatus && (
-                    <button
-                      onClick={() => handleAdvance(order._id, nextStatus)}
-                      disabled={isPending}
-                      className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 transition-colors shadow-sm shadow-orange-100">
-                      Mark as {STATUS_LABEL[nextStatus]} →
-                    </button>
+                  {/* Delivery info */}
+                  <p className="text-xs text-gray-400">
+                    📍 {order.deliveryAddress.street}, {order.deliveryAddress.city}
+                  </p>
+                  {order.notes && (
+                    <p className="text-xs text-gray-500 italic bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100">📝 {order.notes}</p>
                   )}
+
+                  {/* Total + action */}
+                  <div className="flex items-center justify-between border-t border-gray-50 pt-3">
+                    <p className="font-black text-gray-900 text-lg">₨{order.total.toFixed(0)}</p>
+                    {nextStatus && (
+                      <button
+                        onClick={() => handleAdvance(order._id, nextStatus)}
+                        disabled={isPending}
+                        className="px-4 py-2 rounded-xl text-white text-sm font-bold disabled:opacity-50 transition-all hover:scale-[1.02] shadow-md shadow-orange-200/60"
+                        style={{ background: 'linear-gradient(135deg, #ea580c, #f97316)' }}>
+                        Mark as {STATUS_LABEL[nextStatus]} →
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )

@@ -58,8 +58,8 @@ export default function CheckoutClient({
       <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
 
       {/* Delivery Address */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
-        <h2 className="font-semibold text-gray-900">Delivery Address</h2>
+      <div className="rounded-2xl border border-blue-100 shadow-sm p-5 space-y-4" style={{ background: 'linear-gradient(135deg, #eff6ff, #fff)' }}>
+        <h2 className="font-extrabold text-gray-900 flex items-center gap-2">📍 Delivery Address</h2>
 
         {addresses.length > 0 ? (
           <div className="space-y-2">
@@ -99,28 +99,28 @@ export default function CheckoutClient({
       </div>
 
       {/* Order Items */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <h2 className="font-semibold text-gray-900">Order from {cart.restaurantName}</h2>
-        <div className="divide-y divide-gray-50">
+      <div className="rounded-2xl border border-orange-100 shadow-sm p-5 space-y-3" style={{ background: 'linear-gradient(135deg, #fff7ed, #fff)' }}>
+        <h2 className="font-extrabold text-gray-900">🧾 Order from {cart.restaurantName}</h2>
+        <div className="divide-y divide-orange-50">
           {cart.items.map(item => (
-            <div key={item.menuItemId} className="flex justify-between py-2 text-sm">
-              <span className="text-gray-700">{item.name} × {item.quantity}</span>
-              <span className="font-medium text-gray-900">₹{(item.price * item.quantity).toFixed(0)}</span>
+            <div key={item.menuItemId} className="flex justify-between py-2.5 text-sm">
+              <span className="text-gray-700 font-medium">{item.name} × {item.quantity}</span>
+              <span className="font-bold text-gray-900">₨{(item.price * item.quantity).toFixed(0)}</span>
             </div>
           ))}
         </div>
-        <div className="border-t border-gray-100 pt-3 space-y-1.5 text-sm text-gray-600">
-          <div className="flex justify-between"><span>Subtotal</span><span>₹{cart.subtotal.toFixed(0)}</span></div>
-          <div className="flex justify-between"><span>Delivery fee</span><span>₹{deliveryFee}</span></div>
-          <div className="flex justify-between font-bold text-gray-900 text-base pt-1">
-            <span>Total</span><span>₹{total.toFixed(0)}</span>
+        <div className="border-t border-orange-100 pt-3 space-y-1.5 text-sm text-gray-600">
+          <div className="flex justify-between"><span>Subtotal</span><span className="font-semibold">₨{cart.subtotal.toFixed(0)}</span></div>
+          <div className="flex justify-between"><span>Delivery fee</span><span className="font-semibold">₨{deliveryFee}</span></div>
+          <div className="flex justify-between font-black text-orange-600 text-base pt-1">
+            <span>Total</span><span>₨{total.toFixed(0)}</span>
           </div>
         </div>
       </div>
 
       {/* Notes */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h2 className="font-semibold text-gray-900 mb-3">Order Notes (optional)</h2>
+        <h2 className="font-extrabold text-gray-900 mb-3">📝 Order Notes (optional)</h2>
         <textarea rows={2} placeholder="e.g. No onions, extra spicy..."
           value={notes} onChange={e => setNotes(e.target.value)}
           className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-orange-400" />
@@ -131,8 +131,9 @@ export default function CheckoutClient({
       )}
 
       <button onClick={handleSubmit} disabled={isPending}
-        className="w-full py-3.5 rounded-xl bg-orange-500 text-white font-bold text-base hover:bg-orange-600 disabled:opacity-50 transition-colors shadow-sm shadow-orange-200">
-        {isPending ? 'Placing order…' : `Place Order · ₹${total.toFixed(0)}`}
+        className="w-full py-3.5 rounded-xl text-white font-black text-base disabled:opacity-50 transition-all hover:scale-[1.01] shadow-lg shadow-orange-200/60"
+        style={{ background: 'linear-gradient(135deg, #ea580c, #f97316)' }}>
+        {isPending ? 'Placing order…' : `Place Order · ₨${total.toFixed(0)}`}
       </button>
     </div>
   )

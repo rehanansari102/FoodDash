@@ -49,7 +49,7 @@ export default function ProfileClient({ profile }: Props) {
   return (
     <div className="space-y-6">
       {/* ── Profile card ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="rounded-2xl border border-orange-100 shadow-sm p-6 overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff7ed, #fff)' }}>
         <div className="flex items-center gap-5">
           {/* Always-visible avatar — click to upload instantly */}
           <AvatarUpload
@@ -135,7 +135,7 @@ export default function ProfileClient({ profile }: Props) {
       </div>
 
       {/* ── Account info strip ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50 overflow-hidden">
         <InfoRow icon="📧" label="Email" value={profile?.email ?? '—'} />
         <InfoRow
           icon="📛"
@@ -146,7 +146,7 @@ export default function ProfileClient({ profile }: Props) {
       </div>
 
       {/* ── Saved addresses ── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+      <div className="rounded-2xl border border-blue-100 shadow-sm p-6" style={{ background: 'linear-gradient(135deg, #eff6ff, #fff)' }}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold text-gray-900">Saved Addresses</h3>
@@ -291,7 +291,7 @@ function AddressCard({
   isPending: boolean
 }) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-gray-50 border border-gray-100">
+    <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-blue-100" style={{ background: 'linear-gradient(135deg, #eff6ff, #fff)' }}>
       <span className="text-xl mt-0.5">📍</span>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">

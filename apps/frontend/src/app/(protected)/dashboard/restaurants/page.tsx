@@ -54,27 +54,31 @@ export default async function MyRestaurantsPage() {
             <Link
               key={r._id}
               href={`/dashboard/restaurants/${r._id}`}
-              className="bg-white rounded-2xl border border-gray-100 hover:border-orange-200 hover:shadow-md transition-all duration-200 overflow-hidden group"
+              className="rounded-2xl overflow-hidden group shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
             >
               {r.imageUrl ? (
-                <img src={r.imageUrl} alt={r.name} className="w-full h-36 object-cover" />
-              ) : (
-                <div className="w-full h-36 bg-orange-50 flex items-center justify-center">
-                  <span className="text-4xl">🍔</span>
-                </div>
-              )}
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">{r.name}</h2>
-                  <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${r.isOpen ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {r.isOpen ? 'Open' : 'Closed'}
+                <div className="relative w-full h-36 overflow-hidden">
+                  <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                  <span className={`absolute bottom-2 left-3 text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-sm ${r.isOpen ? 'bg-green-500/90 text-white' : 'bg-gray-800/70 text-gray-300'}`}>
+                    {r.isOpen ? '● Open' : '● Closed'}
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{r.address?.city}, {r.address?.country}</p>
-                <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
-                  <span>⭐ {r.rating.toFixed(1)} ({r.reviewCount})</span>
-                  <span>•</span>
-                  <span>Min. ${r.minimumOrder}</span>
+              ) : (
+                <div className="relative w-full h-36 flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fff7ed, #ffedd5, #fed7aa)' }}>
+                  <span className="text-5xl group-hover:scale-110 transition-transform duration-300">🍔</span>
+                  <span className={`absolute bottom-2 left-3 text-xs font-bold px-2 py-0.5 rounded-full ${r.isOpen ? 'bg-green-500/90 text-white' : 'bg-gray-800/70 text-gray-300'}`}>
+                    {r.isOpen ? '● Open' : '● Closed'}
+                  </span>
+                </div>
+              )}
+              <div className="p-4 bg-white">
+                <h2 className="font-extrabold text-gray-900 group-hover:text-orange-600 transition-colors text-[15px]">{r.name}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">📍 {r.address?.city}, {r.address?.country}</p>
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50 text-xs text-gray-500">
+                  <span className="font-semibold text-amber-500">⭐ {r.rating.toFixed(1)}</span>
+                  <span className="text-gray-300">·</span>
+                  <span>Min. <span className="font-semibold text-gray-600">₨{r.minimumOrder}</span></span>
                 </div>
               </div>
             </Link>

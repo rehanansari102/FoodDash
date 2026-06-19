@@ -1,21 +1,125 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --card: #ffffff;
+  --card-border: #f3f4f6;
+  --muted: #f9fafb;
+  --muted-foreground: #6b7280;
+}
+
+.dark {
+  --background: #111827;
+  --foreground: #f9fafb;
+  --card: #1f2937;
+  --card-border: #374151;
+  --muted: #374151;
+  --muted-foreground: #9ca3af;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-lato);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Dark mode base overrides */
+.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* App shell background */
+.app-bg {
+  background: linear-gradient(160deg, #fff7f0 0%, #f9fafb 40%, #f0f9ff 100%);
+}
+.dark .app-bg {
+  background: #111827;
+}
+
+/* ── Dark mode card & surface overrides ──────────────────── */
+/* Any white card becomes dark surface */
+.dark .bg-white {
+  background-color: #1f2937 !important;
+}
+.dark [style*="background: white"],
+.dark [style*="background:#fff"],
+.dark [style*="background: #fff"] {
+  background: #1f2937 !important;
+}
+
+/* Inline gradient cards (orange/blue tint) → dark equivalents */
+.dark [style*="background: linear-gradient(135deg, #fff7ed"],
+.dark [style*="background: linear-gradient(135deg, #eff6ff"],
+.dark [style*="background: linear-gradient(135deg, #fff7f0"],
+.dark [style*="background: linear-gradient(135deg, #f9fafb"] {
+  background: #1f2937 !important;
+}
+
+/* Alternating row tints */
+.dark [style*="background: white"],
+.dark [style*="background: #fafafa"] {
+  background: #1f2937 !important;
+}
+
+/* Text */
+.dark .text-gray-900 { color: #f9fafb !important; }
+.dark .text-gray-800 { color: #f3f4f6 !important; }
+.dark .text-gray-700 { color: #e5e7eb !important; }
+.dark .text-gray-600 { color: #d1d5db !important; }
+.dark .text-gray-500 { color: #9ca3af !important; }
+
+/* Borders */
+.dark .border-gray-100 { border-color: #374151 !important; }
+.dark .border-gray-50  { border-color: #374151 !important; }
+.dark .border-orange-100 { border-color: #431407 !important; }
+.dark .border-blue-100   { border-color: #1e3a5f !important; }
+
+/* Dividers */
+.dark .divide-gray-50 > * + * { border-color: #374151 !important; }
+
+/* Input fields */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #111827 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+
+/* Hover tints */
+.dark .hover\:bg-gray-50:hover  { background-color: #374151 !important; }
+.dark .hover\:bg-orange-50:hover { background-color: #431407 !important; }
+
+/* Stats / quick-action cards that use from-* gradients */
+.dark .from-blue-50   { --tw-gradient-from: #1e3a5f !important; }
+.dark .from-pink-50   { --tw-gradient-from: #4a1d2e !important; }
+.dark .from-amber-50  { --tw-gradient-from: #451a03 !important; }
+.dark .to-blue-100\/50  { --tw-gradient-to: #1e3a5f80 !important; }
+.dark .to-pink-100\/50  { --tw-gradient-to: #4a1d2e80 !important; }
+.dark .to-amber-100\/50 { --tw-gradient-to: #451a0380 !important; }
+.dark .from-green-50  { --tw-gradient-from: #052e16 !important; }
+.dark .from-orange-50 { --tw-gradient-from: #431407 !important; }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-lato), Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  scroll-behavior: smooth;
 }
 
 a,

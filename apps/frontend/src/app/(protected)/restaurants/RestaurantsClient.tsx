@@ -17,55 +17,57 @@ function RestaurantCard({ r, isOwner }: { r: AnyRestaurant; isOwner: boolean }) 
   const isGoogle = 'isGooglePlace' in r && r.isGooglePlace
 
   const card = (
-    <div className="bg-white rounded-2xl border border-gray-100 hover:border-orange-200 hover:shadow-md transition-all duration-200 overflow-hidden group h-full">
+    <div className="rounded-2xl overflow-hidden group h-full shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-transparent hover:border-orange-100">
       {r.imageUrl ? (
-        <img src={r.imageUrl} alt={r.name} className="w-full h-40 object-cover" />
-      ) : (
-        <div className="w-full h-40 bg-orange-50 flex items-center justify-center">
-          <span className="text-5xl">🍔</span>
-        </div>
-      )}
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors leading-tight">
-            {r.name}
-          </h2>
-          <div className="flex flex-col items-end gap-1 flex-shrink-0">
-            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${r.isOpen ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-              {r.isOpen ? 'Open' : 'Closed'}
+        <div className="relative w-full h-44 overflow-hidden">
+          <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-sm ${r.isOpen ? 'bg-green-500/90 text-white' : 'bg-gray-800/70 text-gray-300'}`}>
+              {r.isOpen ? '● Open' : '● Closed'}
             </span>
             {isGoogle && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 border border-blue-100">
-                Google
-              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/90 text-white backdrop-blur-sm">Google</span>
             )}
           </div>
         </div>
+      ) : (
+        <div className="relative w-full h-44 flex items-center justify-center overflow-hidden" style={{ background: 'linear-gradient(135deg, #fff7ed, #ffedd5, #fed7aa)' }}>
+          <span className="text-6xl group-hover:scale-110 transition-transform duration-300">🍔</span>
+          <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.isOpen ? 'bg-green-500/90 text-white' : 'bg-gray-800/70 text-gray-300'}`}>
+              {r.isOpen ? '● Open' : '● Closed'}
+            </span>
+          </div>
+        </div>
+      )}
+      <div className="p-4 bg-white">
+        <h2 className="font-extrabold text-gray-900 group-hover:text-orange-600 transition-colors leading-tight text-[15px]">
+          {r.name}
+        </h2>
 
         {r.cuisineTypes?.length > 0 && (
-          <p className="text-xs text-gray-400 mt-1">{r.cuisineTypes.join(' · ')}</p>
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {r.cuisineTypes.slice(0, 3).map(c => (
+              <span key={c} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 border border-orange-100">{c}</span>
+            ))}
+          </div>
         )}
-        <p className="text-xs text-gray-400 mt-0.5">{r.address?.city}</p>
+        <p className="text-xs text-gray-400 mt-1">📍 {r.address?.city}</p>
 
-        <div className="flex items-center gap-2 mt-3 text-xs text-gray-500 flex-wrap">
-          {r.rating > 0 && <span>⭐ {r.rating.toFixed(1)} {r.reviewCount > 0 && `(${r.reviewCount})`}</span>}
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-50 text-xs text-gray-500 flex-wrap">
+          {r.rating > 0 && <span className="font-semibold text-amber-500">⭐ {r.rating.toFixed(1)} {r.reviewCount > 0 && <span className="text-gray-400 font-normal">({r.reviewCount})</span>}</span>}
           {isGoogle && (r as GooglePlace).priceLevel != null && (
-            <>
-              <span>•</span>
-              <span>{'₨'.repeat((r as GooglePlace).priceLevel! + 1)}</span>
-            </>
+            <span className="text-gray-400">· {'₨'.repeat((r as GooglePlace).priceLevel! + 1)}</span>
           )}
           {!isGoogle && (
-            <>
-              <span>•</span>
-              <span>Min. ₨{(r as Restaurant).minimumOrder}</span>
-            </>
+            <span className="text-gray-400">· Min. <span className="font-semibold text-gray-600">₨{(r as Restaurant).minimumOrder}</span></span>
           )}
         </div>
 
         {isGoogle && (
-          <p className="text-xs mt-2 font-medium text-orange-400">
-            {isOwner ? '+ Register on SnapBite' : 'Not on SnapBite yet'}
+          <p className="text-xs mt-2 font-bold text-orange-500">
+            {isOwner ? '+ Register on SnapBite →' : 'Not on SnapBite yet'}
           </p>
         )}
       </div>
@@ -128,8 +130,9 @@ export default function RestaurantsClient({ isOwner }: { isOwner: boolean }) {
             getNearbyRestaurants(lat, lng, 20),
             getGoogleNearbyRestaurants(lat, lng, 2000),
           ])
+          const snapbiteNames = new Set(snapbite.map(r => r.name.toLowerCase()))
           setSnapbiteRestaurants(snapbite)
-          setGooglePlaces(google)
+          setGooglePlaces(google.filter(g => !snapbiteNames.has(g.name.toLowerCase())))
         } catch (err) {
           // If Google fails, still show SnapBite results
           try {

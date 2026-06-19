@@ -15,13 +15,33 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 }
 
 const STATUS_COLOR: Record<OrderStatus, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  CONFIRMED: 'bg-blue-100 text-blue-700',
-  PREPARING: 'bg-blue-100 text-blue-700',
-  READY: 'bg-purple-100 text-purple-700',
-  PICKED_UP: 'bg-indigo-100 text-indigo-700',
-  DELIVERED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
+  PENDING: 'bg-amber-100 text-amber-700 border border-amber-200',
+  CONFIRMED: 'bg-blue-100 text-blue-700 border border-blue-200',
+  PREPARING: 'bg-violet-100 text-violet-700 border border-violet-200',
+  READY: 'bg-purple-100 text-purple-700 border border-purple-200',
+  PICKED_UP: 'bg-indigo-100 text-indigo-700 border border-indigo-200',
+  DELIVERED: 'bg-green-100 text-green-700 border border-green-200',
+  CANCELLED: 'bg-red-100 text-red-700 border border-red-200',
+}
+
+const STATUS_DOT: Record<OrderStatus, string> = {
+  PENDING: 'bg-amber-400',
+  CONFIRMED: 'bg-blue-500',
+  PREPARING: 'bg-violet-500',
+  READY: 'bg-purple-500',
+  PICKED_UP: 'bg-indigo-500',
+  DELIVERED: 'bg-green-500',
+  CANCELLED: 'bg-red-400',
+}
+
+const STATUS_ICON: Record<OrderStatus, string> = {
+  PENDING: '🕐',
+  CONFIRMED: '✅',
+  PREPARING: '👨‍🍳',
+  READY: '📦',
+  PICKED_UP: '🛵',
+  DELIVERED: '🎉',
+  CANCELLED: '❌',
 }
 
 export default async function OrdersPage() {
@@ -52,24 +72,31 @@ export default async function OrdersPage() {
       <div className="space-y-3">
         {orders.map(order => (
           <Link key={order._id} href={`/orders/${order._id}`}
-            className="block bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-orange-200 transition-colors">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <p className="font-semibold text-gray-900">{order.restaurantName}</p>
-                <p className="text-sm text-gray-500">
-                  {order.items.map(i => `${i.name} ×${i.quantity}`).join(', ')}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                  })}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLOR[order.status]}`}>
-                  {STATUS_LABEL[order.status]}
-                </span>
-                <p className="font-bold text-gray-900">₹{order.total.toFixed(0)}</p>
+            className="block rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden group">
+            {/* Colored top accent bar */}
+            <div className={`h-1 w-full ${STATUS_DOT[order.status]}`} />
+            <div className="bg-white p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{STATUS_ICON[order.status]}</span>
+                    <p className="font-extrabold text-gray-900 group-hover:text-orange-600 transition-colors truncate">{order.restaurantName}</p>
+                  </div>
+                  <p className="text-sm text-gray-500 line-clamp-1">
+                    {order.items.map(i => `${i.name} ×${i.quantity}`).join(', ')}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[order.status]}`}>
+                    {STATUS_LABEL[order.status]}
+                  </span>
+                  <p className="font-black text-gray-900">₨{order.total.toFixed(0)}</p>
+                </div>
               </div>
             </div>
           </Link>

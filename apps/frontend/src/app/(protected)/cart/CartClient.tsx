@@ -72,52 +72,60 @@ export default function CartClient({ initialCart }: { initialCart: Cart | null }
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
-        {cart.items.map(item => (
-          <div key={item.menuItemId} className="flex items-center gap-4 p-4">
-            {item.imageUrl && (
-              <img src={item.imageUrl} alt={item.name}
-                className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+      <div className="rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+        {cart.items.map((item, idx) => (
+          <div key={item.menuItemId}
+            className={`flex items-center gap-4 p-4 transition-colors hover:bg-orange-50/30 ${idx !== 0 ? 'border-t border-gray-50' : ''}`}
+            style={{ background: idx % 2 === 0 ? 'white' : '#fafafa' }}
+          >
+            {item.imageUrl ? (
+              <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-xl object-cover flex-shrink-0 shadow-sm" />
+            ) : (
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: 'linear-gradient(135deg, #fff7ed, #ffedd5)' }}>🍽️</div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 truncate">{item.name}</p>
-              <p className="text-sm text-orange-500 font-semibold">₹{item.price}</p>
+              <p className="font-extrabold text-gray-900 truncate">{item.name}</p>
+              <p className="text-sm font-black text-orange-500 mt-0.5">₨{item.price}</p>
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => handleQuantity(item.menuItemId, -1, item.quantity)}
                 disabled={isPending}
-                className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-orange-400 hover:text-orange-500 disabled:opacity-50 transition-colors">
+                className="w-8 h-8 rounded-full border-2 border-orange-200 flex items-center justify-center text-orange-500 hover:bg-orange-100 disabled:opacity-50 transition-colors font-bold">
                 −
               </button>
-              <span className="w-6 text-center font-semibold text-gray-900">{item.quantity}</span>
+              <span className="w-7 text-center font-black text-gray-900">{item.quantity}</span>
               <button onClick={() => handleQuantity(item.menuItemId, 1, item.quantity)}
                 disabled={isPending}
-                className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-orange-400 hover:text-orange-500 disabled:opacity-50 transition-colors">
+                className="w-8 h-8 rounded-full text-white flex items-center justify-center disabled:opacity-50 transition-all hover:scale-110 font-bold shadow-md shadow-orange-200/60"
+                style={{ background: 'linear-gradient(135deg, #ea580c, #f97316)' }}>
                 +
               </button>
             </div>
-            <p className="w-16 text-right font-semibold text-gray-900">
-              ₹{(item.price * item.quantity).toFixed(0)}
+            <p className="w-16 text-right font-black text-gray-900">
+              ₨{(item.price * item.quantity).toFixed(0)}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <h2 className="font-semibold text-gray-900">Order Summary</h2>
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>Subtotal</span><span>₹{cart.subtotal.toFixed(0)}</span>
-        </div>
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>Delivery fee</span><span>₹{deliveryFee}</span>
-        </div>
-        <div className="border-t border-gray-100 pt-3 flex justify-between font-bold text-gray-900">
-          <span>Total</span><span>₹{total.toFixed(0)}</span>
+      <div className="rounded-2xl overflow-hidden shadow-sm border border-orange-100" style={{ background: 'linear-gradient(135deg, #fff7ed, #fff)' }}>
+        <div className="p-5 space-y-3">
+          <h2 className="font-extrabold text-gray-900">Order Summary</h2>
+          <div className="flex justify-between text-sm text-gray-500">
+            <span>Subtotal</span><span className="font-semibold text-gray-700">₨{cart.subtotal.toFixed(0)}</span>
+          </div>
+          <div className="flex justify-between text-sm text-gray-500">
+            <span>Delivery fee</span><span className="font-semibold text-gray-700">₨{deliveryFee}</span>
+          </div>
+          <div className="border-t border-orange-100 pt-3 flex justify-between font-black text-gray-900 text-lg">
+            <span>Total</span><span className="text-orange-600">₨{total.toFixed(0)}</span>
+          </div>
         </div>
       </div>
 
       <button onClick={() => router.push('/checkout')} disabled={isPending}
-        className="w-full py-3.5 rounded-xl bg-orange-500 text-white font-bold text-base hover:bg-orange-600 disabled:opacity-50 transition-colors shadow-sm shadow-orange-200">
+        className="w-full py-3.5 rounded-xl text-white font-black text-base disabled:opacity-50 transition-all hover:scale-[1.01] shadow-lg shadow-orange-200/60"
+        style={{ background: 'linear-gradient(135deg, #ea580c, #f97316)' }}>
         Proceed to Checkout →
       </button>
     </div>

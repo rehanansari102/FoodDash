@@ -45,12 +45,6 @@ importers:
 
   apps/api-gateway:
     dependencies:
-      '@food-dash/common-guards':
-        specifier: workspace:*
-        version: link:../../packages/common-guards
-      '@food-dash/proto':
-        specifier: workspace:*
-        version: link:../../packages/proto
       '@grpc/grpc-js':
         specifier: ^1.11.1
         version: 1.14.4
@@ -72,6 +66,12 @@ importers:
       '@nestjs/platform-express':
         specifier: ^11.0.0
         version: 11.1.27(@nestjs/common@11.1.27(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.27)
+      '@snapbite/common-guards':
+        specifier: workspace:*
+        version: link:../../packages/common-guards
+      '@snapbite/proto':
+        specifier: workspace:*
+        version: link:../../packages/proto
       express:
         specifier: ^4.19.2
         version: 4.22.2
@@ -233,6 +233,9 @@ importers:
       next:
         specifier: 16.2.2
         version: 16.2.2(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next-themes:
+        specifier: ^0.4.6
+        version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: 19.2.4
         version: 19.2.4
@@ -4391,6 +4394,12 @@ packages:
       pino: ^7.5.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
       pino-http: ^6.4.0 || ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0
       rxjs: ^7.1.0
+
+  next-themes@0.4.6:
+    resolution: {integrity: sha512-pZvgD5L0IEvX5/9GWyHMf3m8BKiVQwsCMHfoFosXtXBMnaS0ZnIJ9ST4b4NqLVKDEm8QBxoNNGNaBv2JNF6XNA==}
+    peerDependencies:
+      react: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
+      react-dom: ^16.8 || ^17 || ^18 || ^19 || ^19.0.0-rc
 
   next@16.2.2:
     resolution: {integrity: sha512-i6AJdyVa4oQjyvX/6GeER8dpY/xlIV+4NMv/svykcLtURJSy/WzDnnUk/TM4d0uewFHK7xSQz4TbIwPgjky+3A==}
@@ -10112,6 +10121,11 @@ snapshots:
       pino: 9.14.0
       pino-http: 10.5.0
       rxjs: 7.8.2
+
+  next-themes@0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   next@16.2.2(@babel/core@7.29.7)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
