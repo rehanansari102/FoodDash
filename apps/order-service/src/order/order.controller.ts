@@ -1,10 +1,11 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, Req, HttpCode, HttpStatus,
+  Body, Param, Req, HttpCode, HttpStatus, RawBodyRequest,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { OrderService } from './order.service';
 import { CartService } from './cart.service';
+import { PaymentService } from './payment.service';
 import { AddToCartDto, UpdateCartItemDto } from './dto/cart.dto';
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -21,6 +22,7 @@ export class OrderController {
   constructor(
     private orderService: OrderService,
     private cartService: CartService,
+    private paymentService: PaymentService,
   ) {}
 
   // ── Cart ────────────────────────────────────────────────────
@@ -93,5 +95,24 @@ export class OrderController {
       req.headers['x-user-role'],
       dto,
     );
+  }
+
+  // ── Payments ────────────────────────────────────────────────
+
+  @Post(':id/payment-intent')
+  createPaymentIntent(@Req() req: AuthRequest, @Param('id') id: string) {
+    return this.paymentService.createPaymentIntent(id, req.headers['x-user-id']);
+  }
+
+  @Post(':id/payment-confirm')
+  confirmPayment(@Param('id') _id: string, @Body() body: { paymentIntentId: string }) {
+    return this.paymentService.confirmPayment(body.paymentIntentId);
+  }
+
+  @Post('stripe/webhook')
+  @HttpCode(HttpStatus.OK)
+  stripeWebhook(@Req() req: RawBodyRequest<Request>) {
+    const sig = req.headers['stripe-signature'] as string;
+    return this.paymentService.handleWebhook(req.rawBody!, sig);
   }
 }

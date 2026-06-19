@@ -13,6 +13,18 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED',
 }
 
+export enum PaymentMethod {
+  COD = 'COD',
+  CARD = 'CARD',
+}
+
+export enum PaymentStatus {
+  UNPAID = 'UNPAID',
+  PAID = 'PAID',
+  FAILED = 'FAILED',
+  REFUNDED = 'REFUNDED',
+}
+
 @Schema({ _id: false })
 export class OrderItem {
   @Prop({ required: true }) menuItemId: string;
@@ -48,6 +60,15 @@ export class Order {
 
   @Prop({ enum: OrderStatus, default: OrderStatus.PENDING, index: true })
   status: OrderStatus;
+
+  @Prop({ enum: PaymentMethod, default: PaymentMethod.COD })
+  paymentMethod: PaymentMethod;
+
+  @Prop({ enum: PaymentStatus, default: PaymentStatus.UNPAID, index: true })
+  paymentStatus: PaymentStatus;
+
+  @Prop() stripePaymentIntentId?: string;
+  @Prop() stripeClientSecret?: string;
 
   @Prop() notes?: string;
   @Prop() cancelReason?: string;

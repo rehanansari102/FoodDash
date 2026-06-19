@@ -2,8 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { placeOrder } from '@/app/actions/order'
 import type { Cart, UserAddress } from '@/app/lib/api'
+
+const PaymentClient = dynamic(() => import('./PaymentClient'), { ssr: false })
+
+type PaymentMethod = 'cod' | 'card'
 
 export default function CheckoutClient({
   cart,
@@ -16,22 +21,26 @@ export default function CheckoutClient({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [notes, setNotes] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod')
+  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null)
 
   const defaultAddress = addresses.find(a => a.isDefault) ?? addresses[0]
   const [selectedAddressId, setSelectedAddressId] = useState<string>(defaultAddress?.id ?? '')
-  const [manualAddress, setManualAddress] = useState({ street: '', city: '', country: 'IN' })
+  const [manualAddress, setManualAddress] = useState({ street: '', city: '', country: 'PK' })
   const useManual = addresses.length === 0
 
   const deliveryFee = 30
   const total = cart.subtotal + deliveryFee
 
-  function handleSubmit() {
-    setError('')
-
-    const address = useManual
+  function getAddress() {
+    return useManual
       ? manualAddress
       : addresses.find(a => a.id === selectedAddressId)
+  }
 
+  function handlePlaceOrder() {
+    setError('')
+    const address = getAddress()
     if (!address || !address.street || !address.city) {
       setError('Please select or enter a delivery address.')
       return
@@ -46,11 +55,35 @@ export default function CheckoutClient({
           lat: 'lat' in address ? address.lat : undefined,
           lng: 'lng' in address ? address.lng : undefined,
         }, notes || undefined)
-        router.push(`/orders/${order._id}`)
+
+        if (paymentMethod === 'cod') {
+          router.push(`/orders/${order._id}`)
+        } else {
+          // For card: place order first, then show Stripe form
+          setPlacedOrderId(order._id)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to place order')
       }
     })
+  }
+
+  // If order placed and card selected, show payment step
+  if (placedOrderId && paymentMethod === 'card') {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="rounded-2xl border border-green-100 shadow-sm p-5" style={{ background: 'linear-gradient(135deg, #f0fdf4, #fff)' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-2xl">💳</span>
+            <div>
+              <h2 className="font-extrabold text-gray-900">Pay with Card</h2>
+              <p className="text-xs text-gray-500">Order placed · complete payment to confirm</p>
+            </div>
+          </div>
+          <PaymentClient orderId={placedOrderId} total={total} />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -118,6 +151,38 @@ export default function CheckoutClient({
         </div>
       </div>
 
+      {/* Payment Method */}
+      <div className="rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3 bg-white">
+        <h2 className="font-extrabold text-gray-900">💳 Payment Method</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <label className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+            paymentMethod === 'cod' ? 'border-orange-400 bg-orange-50 shadow-sm' : 'border-gray-200 hover:border-orange-200'
+          }`}>
+            <input type="radio" name="payment" value="cod"
+              checked={paymentMethod === 'cod'}
+              onChange={() => setPaymentMethod('cod')}
+              className="accent-orange-500" />
+            <div>
+              <p className="font-bold text-gray-900 text-sm">Cash on Delivery</p>
+              <p className="text-xs text-gray-500">Pay when delivered</p>
+            </div>
+          </label>
+
+          <label className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+            paymentMethod === 'card' ? 'border-green-400 bg-green-50 shadow-sm' : 'border-gray-200 hover:border-green-200'
+          }`}>
+            <input type="radio" name="payment" value="card"
+              checked={paymentMethod === 'card'}
+              onChange={() => setPaymentMethod('card')}
+              className="accent-green-500" />
+            <div>
+              <p className="font-bold text-gray-900 text-sm">Credit / Debit Card</p>
+              <p className="text-xs text-gray-500">Secured by Stripe</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
       {/* Notes */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 className="font-extrabold text-gray-900 mb-3">📝 Order Notes (optional)</h2>
@@ -130,10 +195,14 @@ export default function CheckoutClient({
         <p className="text-sm text-red-500 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{error}</p>
       )}
 
-      <button onClick={handleSubmit} disabled={isPending}
+      <button onClick={handlePlaceOrder} disabled={isPending}
         className="w-full py-3.5 rounded-xl text-white font-black text-base disabled:opacity-50 transition-all hover:scale-[1.01] shadow-lg shadow-orange-200/60"
         style={{ background: 'linear-gradient(135deg, #ea580c, #f97316)' }}>
-        {isPending ? 'Placing order…' : `Place Order · ₨${total.toFixed(0)}`}
+        {isPending
+          ? 'Placing order…'
+          : paymentMethod === 'card'
+          ? `Proceed to Payment · ₨${total.toFixed(0)}`
+          : `Place Order · ₨${total.toFixed(0)}`}
       </button>
     </div>
   )

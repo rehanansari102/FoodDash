@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getMyOrders } from '@/app/actions/order'
-import type { OrderStatus } from '@/app/lib/api'
+import type { OrderStatus, PaymentStatus } from '@/app/lib/api'
 
 export const metadata = { title: 'My Orders — SnapBite' }
 
@@ -42,6 +42,13 @@ const STATUS_ICON: Record<OrderStatus, string> = {
   PICKED_UP: '🛵',
   DELIVERED: '🎉',
   CANCELLED: '❌',
+}
+
+const PAYMENT_BADGE: Record<PaymentStatus, { label: string; cls: string }> = {
+  UNPAID:   { label: 'COD',    cls: 'bg-gray-100 text-gray-500' },
+  PAID:     { label: '✅ Paid', cls: 'bg-green-100 text-green-700' },
+  FAILED:   { label: '❌ Failed', cls: 'bg-red-100 text-red-600' },
+  REFUNDED: { label: '↩️ Refunded', cls: 'bg-blue-100 text-blue-600' },
 }
 
 export default async function OrdersPage() {
@@ -91,10 +98,15 @@ export default async function OrdersPage() {
                     })}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[order.status]}`}>
                     {STATUS_LABEL[order.status]}
                   </span>
+                  {order.paymentStatus && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PAYMENT_BADGE[order.paymentStatus].cls}`}>
+                      {PAYMENT_BADGE[order.paymentStatus].label}
+                    </span>
+                  )}
                   <p className="font-black text-gray-900">₨{order.total.toFixed(0)}</p>
                 </div>
               </div>

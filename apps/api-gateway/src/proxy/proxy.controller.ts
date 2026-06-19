@@ -58,10 +58,24 @@ export class ProxyController {
       if (user?.email) headers['x-user-email'] = user.email;
       if (user?.role) headers['x-user-role'] = user.role;
 
+      // Stripe webhook requires the raw body for signature verification
+      const isWebhook = req.path.endsWith('/stripe/webhook')
+      const rawBuf = (req as Request & { rawBody?: Buffer }).rawBody
+      const body = ['GET', 'HEAD'].includes(req.method)
+        ? undefined
+        : isWebhook && rawBuf
+        ? new Uint8Array(rawBuf)
+        : JSON.stringify(req.body)
+
+      if (isWebhook) {
+        const stripeSig = req.headers['stripe-signature']
+        if (stripeSig) headers['stripe-signature'] = stripeSig as string
+      }
+
       const fetchRes = await fetch(url, {
         method: req.method,
         headers,
-        body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+        body,
         signal: controller.signal,
       });
 

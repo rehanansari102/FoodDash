@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateOrderStatus, getOrder } from '@/app/actions/order'
 import { reorder } from '@/app/actions/cart'
-import type { Order, OrderStatus } from '@/app/lib/api'
+import type { Order, OrderStatus, PaymentStatus } from '@/app/lib/api'
 
 const ACTIVE_STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP']
 
@@ -34,6 +34,13 @@ const STATUS_ICON: Record<OrderStatus, string> = {
 }
 
 const STEP_BG: string[] = ['bg-amber-400','bg-blue-500','bg-violet-500','bg-purple-500','bg-indigo-500','bg-green-500']
+
+const PAYMENT_BADGE: Record<NonNullable<PaymentStatus>, { label: string; cls: string; icon: string }> = {
+  UNPAID:   { label: 'Unpaid',   cls: 'bg-gray-100 text-gray-600',   icon: '🕐' },
+  PAID:     { label: 'Paid',     cls: 'bg-green-100 text-green-700', icon: '✅' },
+  FAILED:   { label: 'Failed',   cls: 'bg-red-100 text-red-700',     icon: '❌' },
+  REFUNDED: { label: 'Refunded', cls: 'bg-blue-100 text-blue-700',   icon: '↩️' },
+}
 
 const STEPS: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP', 'DELIVERED']
 
@@ -117,9 +124,19 @@ export default function OrderDetailClient({ order: initial }: { order: Order }) 
                 })}
               </p>
             </div>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUS_COLOR[order.status]}`}>
-              {STATUS_LABEL[order.status]}
-            </span>
+            <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[order.status]}`}>
+                {STATUS_LABEL[order.status]}
+              </span>
+              {order.paymentStatus && (() => {
+                const badge = PAYMENT_BADGE[order.paymentStatus]
+                return (
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 ${badge.cls}`}>
+                    <span>{badge.icon}</span>{badge.label}
+                  </span>
+                )
+              })()}
+            </div>
           </div>
         </div>
       </div>

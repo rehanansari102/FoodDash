@@ -434,6 +434,9 @@ export interface OrderItem {
 
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'PREPARING' | 'READY' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED'
 
+export type PaymentMethod = 'COD' | 'CARD'
+export type PaymentStatus = 'UNPAID' | 'PAID' | 'FAILED' | 'REFUNDED'
+
 export interface Order {
   _id: string
   customerId: string
@@ -445,6 +448,8 @@ export interface Order {
   deliveryFee: number
   total: number
   status: OrderStatus
+  paymentMethod?: PaymentMethod
+  paymentStatus?: PaymentStatus
   notes?: string
   cancelReason?: string
   createdAt: string
