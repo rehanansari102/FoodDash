@@ -39,9 +39,11 @@ const OWNER_NEXT: Partial<Record<OrderStatus, OrderStatus>> = {
   PENDING: 'CONFIRMED',
   CONFIRMED: 'PREPARING',
   PREPARING: 'READY',
+  READY: 'PICKED_UP',
+  PICKED_UP: 'DELIVERED',
 }
 
-const ACTIVE_STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY']
+const ACTIVE_STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP']
 
 export default function RestaurantOrdersClient({ restaurants }: { restaurants: Restaurant[] }) {
   const [selectedId, setSelectedId] = useState<string>(restaurants[0]?._id ?? '')
@@ -68,6 +70,14 @@ export default function RestaurantOrdersClient({ restaurants }: { restaurants: R
   useEffect(() => {
     loadOrders(selectedId)
   }, [selectedId, loadOrders])
+
+  // Auto-refresh every 20s when there are active orders
+  useEffect(() => {
+    const hasActive = orders.some(o => ACTIVE_STATUSES.includes(o.status))
+    if (!hasActive) return
+    const interval = setInterval(() => loadOrders(selectedId), 20_000)
+    return () => clearInterval(interval)
+  }, [orders, selectedId, loadOrders])
 
   function handleAdvance(orderId: string, nextStatus: OrderStatus) {
     startTransition(async () => {

@@ -93,6 +93,33 @@ export async function clearCart(): Promise<{ success: boolean }> {
   } catch { return { success: false } }
 }
 
+export async function reorder(items: {
+  menuItemId: string
+  name: string
+  price: number
+  quantity: number
+  imageUrl?: string
+}[], restaurantId: string, restaurantName: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const headers = await authHeader()
+    // Clear existing cart first
+    await fetch(`${GATEWAY}/api/orders/cart`, { method: 'DELETE', headers })
+    // Add each item sequentially
+    for (const item of items) {
+      const res = await fetch(`${GATEWAY}/api/orders/cart/items`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...item, restaurantId, restaurantName }),
+      })
+      if (!res.ok) return { success: false, message: 'Failed to rebuild cart' }
+    }
+    revalidatePath('/cart')
+    return { success: true }
+  } catch (e) {
+    return { success: false, message: (e as Error).message }
+  }
+}
+
 export async function updateCartItem(menuItemId: string, quantity: number): Promise<{ success: boolean; cart?: Cart; message?: string }> {
   try {
     const headers = await authHeader()

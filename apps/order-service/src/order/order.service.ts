@@ -20,6 +20,8 @@ const RESTAURANT_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus>> = {
   [OrderStatus.PENDING]: OrderStatus.CONFIRMED,
   [OrderStatus.CONFIRMED]: OrderStatus.PREPARING,
   [OrderStatus.PREPARING]: OrderStatus.READY,
+  [OrderStatus.READY]: OrderStatus.PICKED_UP,
+  [OrderStatus.PICKED_UP]: OrderStatus.DELIVERED,
 };
 
 const DRIVER_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus>> = {

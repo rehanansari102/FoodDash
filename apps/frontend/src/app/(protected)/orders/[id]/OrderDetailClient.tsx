@@ -1,9 +1,12 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateOrderStatus } from '@/app/actions/order'
+import { updateOrderStatus, getOrder } from '@/app/actions/order'
+import { reorder } from '@/app/actions/cart'
 import type { Order, OrderStatus } from '@/app/lib/api'
+
+const ACTIVE_STATUSES: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'PICKED_UP']
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
   PENDING: 'Pending',
@@ -40,11 +43,42 @@ export default function OrderDetailClient({ order: initial }: { order: Order }) 
   const [error, setError] = useState('')
   const [cancelReason, setCancelReason] = useState('')
   const [showCancelForm, setShowCancelForm] = useState(false)
+  const [reordering, setReordering] = useState(false)
+  const [reorderMsg, setReorderMsg] = useState('')
   const router = useRouter()
 
   const canCancel = order.status === 'PENDING'
   const currentStepIdx = STEPS.indexOf(order.status)
   const isCancelled = order.status === 'CANCELLED'
+  const isActive = ACTIVE_STATUSES.includes(order.status)
+
+  // Auto-refresh every 15s while order is active
+  useEffect(() => {
+    if (!isActive) return
+    const interval = setInterval(async () => {
+      try {
+        const updated = await getOrder(order._id)
+        setOrder(updated)
+      } catch { /* silent */ }
+    }, 15_000)
+    return () => clearInterval(interval)
+  }, [order._id, isActive])
+
+  async function handleReorder() {
+    setReordering(true)
+    setReorderMsg('')
+    const result = await reorder(
+      order.items.map(i => ({ menuItemId: i.menuItemId, name: i.name, price: i.price, quantity: i.quantity, imageUrl: i.imageUrl })),
+      order.restaurantId,
+      order.restaurantName,
+    )
+    setReordering(false)
+    if (result.success) {
+      router.push('/cart')
+    } else {
+      setReorderMsg(result.message ?? 'Failed to reorder')
+    }
+  }
 
   function handleCancel() {
     if (!cancelReason.trim()) {
@@ -199,9 +233,30 @@ export default function OrderDetailClient({ order: initial }: { order: Order }) 
         </div>
       )}
 
+      {/* Live indicator for active orders */}
+      {isActive && (
+        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          Auto-refreshing every 15s
+        </div>
+      )}
+
+      {reorderMsg && (
+        <p className="text-xs text-red-500 text-center">{reorderMsg}</p>
+      )}
+
+      <button
+        onClick={handleReorder}
+        disabled={reordering}
+        className="w-full py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] disabled:opacity-50 text-white shadow-md shadow-orange-200/60"
+        style={{ background: 'linear-gradient(135deg, #ea580c, #f97316)' }}
+      >
+        {reordering ? 'Adding to cart…' : '🔁 Reorder'}
+      </button>
+
       <button onClick={() => router.push('/restaurants')}
-        className="w-full py-3 rounded-xl border border-orange-200 text-orange-500 font-semibold text-sm hover:bg-orange-50 transition-colors">
-        Order Again
+        className="w-full py-2.5 rounded-xl border border-orange-200 text-orange-500 font-semibold text-sm hover:bg-orange-50 transition-colors">
+        Browse Restaurants
       </button>
     </div>
   )
