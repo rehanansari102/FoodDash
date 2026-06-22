@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { apiGetAllRestaurants, apiGetNearbyRestaurants } from '@/app/lib/api'
+import { apiGetAllRestaurants, apiGetMyRestaurants, apiGetNearbyRestaurants } from '@/app/lib/api'
 import {
   apiCreateRestaurant,
   apiUpdateRestaurant,
