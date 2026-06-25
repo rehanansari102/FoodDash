@@ -4,6 +4,7 @@
  * Creates:
  *   - 1 restaurant_owner user (auth DB)
  *   - 1 customer user (auth DB)
+ *   - 1 admin user (auth DB)
  *   - 3 restaurants with opening hours (restaurants DB)
  *   - menu items per restaurant (menus DB)
  *
@@ -72,6 +73,7 @@ const menuItemSchema = new mongoose.Schema({
 
 const OWNER_EMAIL = 'owner@snapbite.dev';
 const CUSTOMER_EMAIL = 'customer@snapbite.dev';
+const ADMIN_EMAIL = 'admin@snapbite.dev';
 const SEED_PASSWORD = 'Password123!';
 
 const WEEKDAYS = [
@@ -171,10 +173,17 @@ async function seed() {
     ON CONFLICT (email) DO NOTHING
   `, [CUSTOMER_EMAIL, passwordHash]);
 
+  // Upsert admin
+  await queryRunner.query(`
+    INSERT INTO users (id, email, "passwordHash", role, "isActive", "isEmailVerified")
+    VALUES (gen_random_uuid(), $1, $2, 'admin', true, true)
+    ON CONFLICT (email) DO NOTHING
+  `, [ADMIN_EMAIL, passwordHash]);
+
   const ownerRow = await queryRunner.query(`SELECT id FROM users WHERE email = $1`, [OWNER_EMAIL]);
   const ownerId: string = ownerRow[0].id;
 
-  console.log(`✅ PostgreSQL — owner: ${OWNER_EMAIL}, customer: ${CUSTOMER_EMAIL}`);
+  console.log(`✅ PostgreSQL — owner: ${OWNER_EMAIL}, customer: ${CUSTOMER_EMAIL}, admin: ${ADMIN_EMAIL}`);
   console.log(`   owner id: ${ownerId}\n`);
 
   await queryRunner.release();
@@ -210,9 +219,10 @@ async function seed() {
   await menuConn.close();
 
   console.log('\n✅ Seed complete!');
-  console.log(`\nLogin credentials (both accounts):`);
+  console.log(`\nLogin credentials:`);
   console.log(`  Owner:    ${OWNER_EMAIL} / ${SEED_PASSWORD}`);
   console.log(`  Customer: ${CUSTOMER_EMAIL} / ${SEED_PASSWORD}`);
+  console.log(`  Admin:    ${ADMIN_EMAIL} / ${SEED_PASSWORD}`);
 }
 
 seed().catch((err) => {

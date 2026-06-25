@@ -73,6 +73,25 @@ export class PaymentService {
     return updated as unknown as Order;
   }
 
+  async refundOrder(orderId: string): Promise<void> {
+    const order = await this.orderModel.findById(orderId).lean();
+    if (!order) return;
+
+    const o = order as any;
+    if (o.paymentStatus !== PaymentStatus.PAID || !o.stripePaymentIntentId) return;
+
+    const refund = await this.stripe.refunds.create({
+      payment_intent: o.stripePaymentIntentId,
+      reason: 'requested_by_customer',
+    });
+
+    if (refund.status === 'succeeded' || refund.status === 'pending') {
+      await this.orderModel.findByIdAndUpdate(orderId, {
+        $set: { paymentStatus: PaymentStatus.REFUNDED },
+      });
+    }
+  }
+
   async handleWebhook(rawBody: Buffer, signature: string): Promise<void> {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!webhookSecret) return;

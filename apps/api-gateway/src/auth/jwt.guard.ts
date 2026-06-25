@@ -30,8 +30,23 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
 
     // Public routes — no token required
-    if (request.path.startsWith('/api/auth')) return true;
-    if (request.method === 'GET' && request.path.startsWith('/api/restaurants') && !request.path.includes('/my')) return true;
+    const PUBLIC_AUTH_PATHS = [
+      '/api/auth/register',
+      '/api/auth/login',
+      '/api/auth/refresh',
+      '/api/auth/logout',
+      '/api/auth/forgot-password',
+      '/api/auth/reset-password',
+      '/api/auth/verify-email',
+      '/api/auth/resend-verification',
+    ];
+    if (PUBLIC_AUTH_PATHS.some(p => request.path.startsWith(p))) return true;
+    const isPublicRestaurantRoute = request.method === 'GET'
+      && request.path.startsWith('/api/restaurants')
+      && !request.path.includes('/my')
+      && !request.path.includes('/pending')
+      && !request.path.endsWith('/reviews/me');
+    if (isPublicRestaurantRoute) return true;
     if (request.method === 'GET' && request.path.startsWith('/api/menus')) return true;
     if (request.path === '/api/orders/stripe/webhook') return true;
 

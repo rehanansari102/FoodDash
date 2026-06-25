@@ -8,7 +8,15 @@ name: snapbite
 #  Usage: docker-compose -f docker-compose.prod.yml up -d
 #         (shortcut: pnpm prod:up)
 #  Required env vars: JWT_SECRET, APP_URL
+#
+#  Network topology:
+#    internet → frontend:3010 → api-gateway:3000 → microservices
+#    microservices have NO public ports — internal network only
 # ─────────────────────────────────────────────────────────────
+
+networks:
+  internal:
+    driver: bridge
 
 services:
 
@@ -22,9 +30,9 @@ services:
       - ./apps/auth-service/.env
     environment:
       NODE_ENV: production
-    ports:
-      - '3001:3001'
-      - '50051:50051'
+    networks:
+      - internal
+    # no ports — only reachable by other containers on the internal network
 
   user-service:
     build:
@@ -37,8 +45,8 @@ services:
     environment:
       PORT: 3002
       NODE_ENV: production
-    ports:
-      - '3002:3002'
+    networks:
+      - internal
 
   restaurant-service:
     build:
@@ -51,8 +59,8 @@ services:
     environment:
       PORT: 3003
       NODE_ENV: production
-    ports:
-      - '3003:3003'
+    networks:
+      - internal
 
   menu-service:
     build:
@@ -65,8 +73,8 @@ services:
     environment:
       PORT: 3004
       NODE_ENV: production
-    ports:
-      - '3004:3004'
+    networks:
+      - internal
 
   order-service:
     build:
@@ -79,8 +87,8 @@ services:
     environment:
       PORT: 3005
       NODE_ENV: production
-    ports:
-      - '3005:3005'
+    networks:
+      - internal
 
   media-service:
     build:
@@ -93,8 +101,8 @@ services:
     environment:
       PORT: 3011
       NODE_ENV: production
-    ports:
-      - '3011:3011'
+    networks:
+      - internal
 
   api-gateway:
     build:
@@ -115,8 +123,9 @@ services:
       MENU_SERVICE_URL: http://fd-menu-service:3004
       MEDIA_SERVICE_URL: http://fd-media-service:3011
       ORDER_SERVICE_URL: http://fd-order-service:3005
-    ports:
-      - '3000:3000'
+    networks:
+      - internal
+    # no public port — frontend talks to it via internal network
     depends_on:
       - auth-service
       - user-service
@@ -136,7 +145,9 @@ services:
     environment:
       API_GATEWAY_URL: http://fd-api-gateway:3000
       NEXT_PUBLIC_APP_URL: ${APP_URL}
+    networks:
+      - internal
     ports:
-      - '3010:3010'
+      - '80:3010'   # only public entry point
     depends_on:
       - api-gateway

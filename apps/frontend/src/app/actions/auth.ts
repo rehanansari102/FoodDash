@@ -1,7 +1,8 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { apiLogin, apiLogout, apiRefresh, apiRegister, apiForgotPassword, apiResetPassword, apiVerifyEmail, apiResendVerification } from '@/app/lib/api'
+import { revalidatePath } from 'next/cache'
+import { apiLogin, apiLogout, apiRefresh, apiRegister, apiForgotPassword, apiResetPassword, apiVerifyEmail, apiResendVerification, apiApplyForOwner, apiGetOwnerApplications, apiReviewOwnerApplication } from '@/app/lib/api'
 import { clearAuthCookies, getAccessToken, getRefreshToken, setAuthCookies } from '@/app/lib/cookies'
 
 export type AuthState = {
@@ -160,4 +161,40 @@ export async function resendVerification(): Promise<SimpleState> {
 // Returns the access token for WebSocket auth (avoids exposing cookie to client JS directly)
 export async function getWsToken(): Promise<string | undefined> {
   return getAccessToken()
+}
+
+// ── Owner Applications ────────────────────────────────────────────────────────
+
+export async function applyForOwner(businessName: string): Promise<SimpleState> {
+  const accessToken = await getAccessToken()
+  if (!accessToken) return { message: 'Please log in first.' }
+  try {
+    const result = await apiApplyForOwner(accessToken, businessName)
+    revalidatePath('/dashboard')
+    return { success: true, message: result.message }
+  } catch (err) {
+    return { message: err instanceof Error ? err.message : 'Failed to submit application.' }
+  }
+}
+
+export async function getOwnerApplications() {
+  const accessToken = await getAccessToken()
+  if (!accessToken) return []
+  try {
+    return await apiGetOwnerApplications(accessToken)
+  } catch {
+    return []
+  }
+}
+
+export async function reviewOwnerApplication(userId: string, approve: boolean): Promise<SimpleState> {
+  const accessToken = await getAccessToken()
+  if (!accessToken) return { message: 'Please log in first.' }
+  try {
+    const result = await apiReviewOwnerApplication(accessToken, userId, approve)
+    revalidatePath('/dashboard/admin')
+    return { success: true, message: result.message }
+  } catch (err) {
+    return { message: err instanceof Error ? err.message : 'Failed to process application.' }
+  }
 }

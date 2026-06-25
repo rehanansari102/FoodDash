@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner'
+import { apiGetPendingRestaurants, apiGetOwnerApplications } from '@/app/lib/api'
 
 export const metadata = { title: 'Dashboard — SnapBite' }
 
@@ -23,7 +24,20 @@ export default async function DashboardPage() {
   const payload = decodeJwtPayload(token)
   const isEmailVerified = payload.isEmailVerified === true
   const isOwner = payload.role === 'restaurant_owner' || payload.role === 'admin'
+  const isAdmin = payload.role === 'admin'
+  const isCustomer = payload.role === 'customer'
   const name = String(payload.email ?? '').split('@')[0]
+
+  let adminPendingCount = 0
+  if (isAdmin) {
+    try {
+      const [pendingRestaurants, ownerApplications] = await Promise.all([
+        apiGetPendingRestaurants(token),
+        apiGetOwnerApplications(token),
+      ])
+      adminPendingCount = pendingRestaurants.length + ownerApplications.length
+    } catch { /* non-fatal */ }
+  }
 
   return (
     <div className="space-y-8 max-w-5xl">
@@ -110,6 +124,47 @@ export default async function DashboardPage() {
                 <p className="text-orange-400 text-sm mt-0.5">Manage menus & hours</p>
               </div>
               <svg className="w-5 h-5 text-orange-300 ml-auto flex-shrink-0 group-hover:text-orange-500 group-hover:translate-x-1 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </Link>
+          )}
+
+          {isCustomer && (
+            <Link href="/dashboard/apply-owner"
+              className="group relative overflow-hidden rounded-2xl p-6 flex items-center gap-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)' }}>
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300" style={{ background: 'radial-gradient(circle at 70% 50%, #7c3aed, transparent)' }} />
+              <div className="w-14 h-14 rounded-2xl bg-violet-500 flex items-center justify-center text-3xl flex-shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-200">🏪</div>
+              <div>
+                <p className="font-black text-lg text-gray-900 leading-tight">Become a Restaurant Owner</p>
+                <p className="text-violet-400 text-sm mt-0.5">Apply to list your restaurant</p>
+              </div>
+              <svg className="w-5 h-5 text-violet-300 ml-auto flex-shrink-0 group-hover:text-violet-500 group-hover:translate-x-1 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </Link>
+          )}
+
+          {isAdmin && (
+            <Link href="/dashboard/admin"
+              className="group relative overflow-hidden rounded-2xl p-6 flex items-center gap-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              style={{ background: 'linear-gradient(135deg, #faf5ff, #ede9fe)' }}>
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300" style={{ background: 'radial-gradient(circle at 70% 50%, #8b5cf6, transparent)' }} />
+              <div className="relative w-14 h-14 rounded-2xl bg-violet-500 flex items-center justify-center text-3xl flex-shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-violet-200">
+                🛡️
+                {adminPendingCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center shadow-md">
+                    {adminPendingCount > 99 ? '99+' : adminPendingCount}
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="font-black text-lg text-gray-900 leading-tight">Admin Panel</p>
+                <p className="text-violet-400 text-sm mt-0.5">
+                  {adminPendingCount > 0 ? `${adminPendingCount} item${adminPendingCount !== 1 ? 's' : ''} need attention` : 'Approve restaurants & owners'}
+                </p>
+              </div>
+              <svg className="w-5 h-5 text-violet-300 ml-auto flex-shrink-0 group-hover:text-violet-500 group-hover:translate-x-1 transition-all duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" d="M9 5l7 7-7 7"/>
               </svg>
             </Link>

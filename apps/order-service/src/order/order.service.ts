@@ -12,6 +12,7 @@ import { UpdateStatusDto } from './dto/update-status.dto';
 import { CartService } from './cart.service';
 import { OrderGateway } from './order.gateway';
 import { MailService } from './mail.service';
+import { PaymentService } from './payment.service';
 
 // Allowed status transitions per actor
 const CUSTOMER_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus>> = {
@@ -50,6 +51,7 @@ export class OrderService {
     private cartService: CartService,
     private orderGateway: OrderGateway,
     private mailService: MailService,
+    private paymentService: PaymentService,
   ) {}
 
   // Fetches restaurant owner info from restaurant-service (internal)
@@ -219,6 +221,11 @@ export class OrderService {
     const updated = await this.orderModel
       .findByIdAndUpdate(orderId, { $set: update }, { new: true, lean: true })
       .exec();
+
+    // Fire-and-forget Stripe refund — if it fails the order is still cancelled
+    if (next === OrderStatus.CANCELLED) {
+      this.paymentService.refundOrder(orderId).catch(() => null);
+    }
 
     return sanitizeOrder(updated) as unknown as Order;
   }

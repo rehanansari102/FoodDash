@@ -11,9 +11,15 @@ import {
   apiUpdateMenuItem,
   apiDeleteMenuItem,
   apiToggleMenuItem,
+  apiGetRestaurantReviews,
+  apiCreateReview,
+  apiGetPendingRestaurants,
+  apiApproveRestaurant,
+  apiSearchRestaurants,
   type CreateRestaurantPayload,
   type CreateMenuItemPayload,
   type DayHours,
+  type CreateReviewPayload,
 } from '@/app/lib/api'
 import { getAccessToken } from '@/app/lib/cookies'
 
@@ -191,5 +197,66 @@ export async function toggleMenuItem(restaurantId: string, itemId: string): Prom
     return { success: true, data: result }
   } catch (err) {
     return { message: err instanceof Error ? err.message : 'Failed to toggle item.' }
+  }
+}
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+
+export async function getPendingRestaurants() {
+  const accessToken = await getAccessToken()
+  if (!accessToken) return []
+  try {
+    return await apiGetPendingRestaurants(accessToken)
+  } catch {
+    return []
+  }
+}
+
+export async function approveRestaurant(restaurantId: string): Promise<ActionState> {
+  const accessToken = await getAccessToken()
+  if (!accessToken) return { message: 'Please log in first.' }
+  try {
+    await apiApproveRestaurant(accessToken, restaurantId)
+    revalidatePath('/dashboard/admin')
+    return { success: true }
+  } catch (err) {
+    return { message: err instanceof Error ? err.message : 'Failed to approve restaurant.' }
+  }
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export async function getRestaurantReviews(restaurantId: string) {
+  try {
+    return await apiGetRestaurantReviews(restaurantId)
+  } catch {
+    return []
+  }
+}
+
+export async function searchRestaurants(params: {
+  q?: string
+  cuisine?: string
+  minRating?: number
+  isOpen?: boolean
+}) {
+  const accessToken = await getAccessToken()
+  try {
+    return await apiSearchRestaurants(accessToken ?? '', params)
+  } catch {
+    return []
+  }
+}
+
+export async function submitReview(restaurantId: string, payload: CreateReviewPayload): Promise<ActionState> {
+  const accessToken = await getAccessToken()
+  if (!accessToken) return { message: 'Please log in first.' }
+
+  try {
+    const review = await apiCreateReview(accessToken, restaurantId, payload)
+    revalidatePath(`/restaurants/${restaurantId}`)
+    return { success: true, data: review }
+  } catch (err) {
+    return { message: err instanceof Error ? err.message : 'Failed to submit review.' }
   }
 }

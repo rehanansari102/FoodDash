@@ -128,6 +128,52 @@ export async function apiResendVerification(accessToken: string): Promise<void> 
   }
 }
 
+// ── Owner Applications ────────────────────────────────────────────────────────
+
+export type OwnerApplicationStatus = 'none' | 'pending' | 'approved' | 'rejected'
+
+export interface OwnerApplication {
+  id: string
+  email: string
+  businessName: string
+  createdAt: string
+}
+
+export async function apiApplyForOwner(accessToken: string, businessName: string): Promise<{ message: string }> {
+  const res = await gatewayFetch('/api/auth/apply-owner', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` } as never,
+    body: JSON.stringify({ businessName }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body?.message ?? 'Failed to submit application')
+  }
+  return res.json()
+}
+
+export async function apiGetOwnerApplications(accessToken: string): Promise<OwnerApplication[]> {
+  const res = await gatewayFetch('/api/auth/admin/applications', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` } as never,
+  })
+  if (!res.ok) throw new Error('Failed to fetch applications')
+  return res.json()
+}
+
+export async function apiReviewOwnerApplication(accessToken: string, userId: string, approve: boolean): Promise<{ message: string }> {
+  const res = await gatewayFetch(`/api/auth/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` } as never,
+    body: JSON.stringify({ approve }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body?.message ?? 'Failed to review application')
+  }
+  return res.json()
+}
+
 // ── Restaurant ────────────────────────────────────────────────────────────────
 
 export interface RestaurantAddress {
@@ -204,6 +250,43 @@ export async function apiGetRestaurant(id: string): Promise<Restaurant> {
 export async function apiGetAllRestaurants(): Promise<Restaurant[]> {
   const res = await gatewayFetch('/api/restaurants', { method: 'GET' })
   if (!res.ok) throw new Error('Failed to fetch restaurants')
+  return res.json()
+}
+
+export async function apiGetPendingRestaurants(accessToken: string): Promise<Restaurant[]> {
+  const res = await gatewayFetch('/api/restaurants/pending', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` } as never,
+  })
+  if (!res.ok) throw new Error('Failed to fetch pending restaurants')
+  return res.json()
+}
+
+export async function apiApproveRestaurant(accessToken: string, id: string): Promise<Restaurant> {
+  const res = await gatewayFetch(`/api/restaurants/${id}/approve`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` } as never,
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body?.message ?? 'Failed to approve restaurant')
+  }
+  return res.json()
+}
+
+export async function apiSearchRestaurants(
+  accessToken: string,
+  params: { q?: string; cuisine?: string; minRating?: number; isOpen?: boolean },
+): Promise<Restaurant[]> {
+  const qs = new URLSearchParams()
+  if (params.q) qs.set('q', params.q)
+  if (params.cuisine) qs.set('cuisine', params.cuisine)
+  if (params.minRating) qs.set('minRating', String(params.minRating))
+  if (params.isOpen) qs.set('isOpen', 'true')
+  const res = await gatewayFetch(`/api/restaurants/search?${qs}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) return []
   return res.json()
 }
 
@@ -583,6 +666,46 @@ export async function apiUpdateOrderStatus(accessToken: string, orderId: string,
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body?.message ?? 'Failed to update order status')
+  }
+  return res.json()
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export interface Review {
+  _id: string
+  customerId: string
+  restaurantId: string
+  orderId: string
+  title?: string
+  description: string
+  rating: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateReviewPayload {
+  orderId: string
+  title?: string
+  description: string
+  rating: number
+}
+
+export async function apiGetRestaurantReviews(restaurantId: string): Promise<Review[]> {
+  const res = await gatewayFetch(`/api/restaurants/${restaurantId}/reviews`, { method: 'GET' })
+  if (!res.ok) throw new Error('Failed to fetch reviews')
+  return res.json()
+}
+
+export async function apiCreateReview(accessToken: string, restaurantId: string, payload: CreateReviewPayload): Promise<Review> {
+  const res = await gatewayFetch(`/api/restaurants/${restaurantId}/reviews`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` } as never,
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body?.message ?? 'Failed to submit review')
   }
   return res.json()
 }

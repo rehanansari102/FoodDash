@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
-import { apiGetMyRestaurants } from '@/app/lib/api'
+import { apiGetMyRestaurants, apiGetPendingRestaurants, apiGetOwnerApplications } from '@/app/lib/api'
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const token = (await cookies()).get('access_token')?.value
@@ -26,5 +26,17 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     } catch { /* non-fatal */ }
   }
 
-  return <AppShell email={email} role={role} restaurantIds={restaurantIds}>{children}</AppShell>
+  // Fetch pending admin count so the nav badge stays up to date on every navigation
+  let adminPendingCount = 0
+  if (role === 'admin') {
+    try {
+      const [pendingRestaurants, ownerApplications] = await Promise.all([
+        apiGetPendingRestaurants(token),
+        apiGetOwnerApplications(token),
+      ])
+      adminPendingCount = pendingRestaurants.length + ownerApplications.length
+    } catch { /* non-fatal */ }
+  }
+
+  return <AppShell email={email} role={role} restaurantIds={restaurantIds} adminPendingCount={adminPendingCount}>{children}</AppShell>
 }

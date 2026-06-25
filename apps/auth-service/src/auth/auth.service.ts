@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { randomBytes, createHash } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
-import { User, UserRole } from './entities/user.entity';
+import { User, UserRole, OwnerApplicationStatus } from './entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -44,7 +44,7 @@ export class AuthService {
     const user = this.userRepo.create({
       email: dto.email,
       passwordHash,
-      role: dto.role ?? UserRole.CUSTOMER,
+      role: UserRole.CUSTOMER,
       isEmailVerified: false,
       emailVerificationToken: tokenHash,
       emailVerificationExpires: expires,
@@ -235,5 +235,40 @@ export class AuthService {
       refreshToken,
       user: { id: user.id, email: user.email, role: user.role },
     };
+  }
+
+  async applyForOwner(userId: string, businessName: string) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+    if (user.role !== UserRole.CUSTOMER) throw new BadRequestException('Only customers can apply');
+    if (user.ownerApplicationStatus === OwnerApplicationStatus.PENDING) {
+      throw new ConflictException('You already have a pending application');
+    }
+    await this.userRepo.update(userId, {
+      ownerApplicationStatus: OwnerApplicationStatus.PENDING,
+      businessName,
+    });
+    return { message: 'Application submitted. You will be notified once reviewed.' };
+  }
+
+  async getPendingOwnerApplications() {
+    return this.userRepo.find({
+      where: { ownerApplicationStatus: OwnerApplicationStatus.PENDING },
+      select: ['id', 'email', 'businessName', 'createdAt'],
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async reviewOwnerApplication(userId: string, approve: boolean) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+    if (user.ownerApplicationStatus !== OwnerApplicationStatus.PENDING) {
+      throw new BadRequestException('No pending application for this user');
+    }
+    await this.userRepo.update(userId, {
+      ownerApplicationStatus: approve ? OwnerApplicationStatus.APPROVED : OwnerApplicationStatus.REJECTED,
+      ...(approve && { role: UserRole.RESTAURANT_OWNER }),
+    });
+    return { message: approve ? 'User promoted to restaurant owner' : 'Application rejected' };
   }
 }

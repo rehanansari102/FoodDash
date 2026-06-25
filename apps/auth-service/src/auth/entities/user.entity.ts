@@ -14,6 +14,13 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum OwnerApplicationStatus {
+  NONE = 'none',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -47,6 +54,12 @@ export class User {
 
   @Column({ nullable: true, type: 'timestamptz' })
   passwordResetExpires: Date | null;
+
+  @Column({ type: 'enum', enum: OwnerApplicationStatus, default: OwnerApplicationStatus.NONE })
+  ownerApplicationStatus: OwnerApplicationStatus;
+
+  @Column({ nullable: true, type: 'varchar' })
+  businessName: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

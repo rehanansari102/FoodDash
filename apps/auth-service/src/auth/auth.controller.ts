@@ -2,12 +2,16 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
+  Param,
   Query,
   Res,
   Req,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { Request, Response } from 'express';
@@ -16,6 +20,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ApplyOwnerDto } from './dto/apply-owner.dto';
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
@@ -105,6 +110,35 @@ export class AuthController {
       ...COOKIE_OPTIONS,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+  }
+
+  @Post('apply-owner')
+  @HttpCode(HttpStatus.OK)
+  async applyForOwner(@Req() req: Request, @Body() dto: ApplyOwnerDto) {
+    const userId = (req.headers as Record<string, string>)['x-user-id'];
+    if (!userId) throw new UnauthorizedException('Please log in');
+    return this.authService.applyForOwner(userId, dto.businessName);
+  }
+
+  @Get('admin/applications')
+  async getPendingApplications(@Req() req: Request) {
+    if ((req.headers as Record<string, string>)['x-user-role'] !== 'admin') {
+      throw new ForbiddenException('Admin only');
+    }
+    return this.authService.getPendingOwnerApplications();
+  }
+
+  @Patch('admin/users/:id/role')
+  @HttpCode(HttpStatus.OK)
+  async reviewApplication(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() body: { approve: boolean },
+  ) {
+    if ((req.headers as Record<string, string>)['x-user-role'] !== 'admin') {
+      throw new ForbiddenException('Admin only');
+    }
+    return this.authService.reviewOwnerApplication(id, body.approve);
   }
 
   // gRPC method — called by API Gateway to verify tokens

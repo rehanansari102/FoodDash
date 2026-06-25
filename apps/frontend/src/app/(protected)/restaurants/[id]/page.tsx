@@ -1,18 +1,26 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { apiGetRestaurant, apiGetMenu, type MenuItem } from '@/app/lib/api'
+import { apiGetRestaurant, apiGetMenu, apiGetRestaurantReviews, type MenuItem, type Review } from '@/app/lib/api'
 import RestaurantMenuClient from './RestaurantMenuClient'
+import ReviewsSection from './ReviewsSection'
 
 export default async function RestaurantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
   let restaurant: Awaited<ReturnType<typeof apiGetRestaurant>>
   let menuItems: MenuItem[]
+  let reviews: Review[] = []
 
   try {
     ;[restaurant, menuItems] = await Promise.all([apiGetRestaurant(id), apiGetMenu(id)])
   } catch {
     notFound()
+  }
+
+  try {
+    reviews = await apiGetRestaurantReviews(id)
+  } catch {
+    // Reviews are non-critical — page still renders without them
   }
 
   return (
@@ -66,6 +74,9 @@ export default async function RestaurantDetailPage({ params }: { params: Promise
           menuItems={menuItems!}
         />
       </div>
+
+      {/* Reviews */}
+      <ReviewsSection restaurantId={id} initialReviews={reviews} />
     </div>
   )
 }

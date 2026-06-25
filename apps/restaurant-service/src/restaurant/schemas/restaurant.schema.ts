@@ -55,3 +55,5 @@ export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);
 RestaurantSchema.index({ location: '2dsphere' });
 // Index for fast owner lookups
 RestaurantSchema.index({ ownerId: 1 });
+// Full-text search on name and description
+RestaurantSchema.index({ name: 'text', description: 'text' });

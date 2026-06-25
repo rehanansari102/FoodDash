@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { logout } from '@/app/actions/auth'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -16,6 +16,7 @@ interface Props {
   email: string
   role: string
   restaurantIds: string[]
+  adminPendingCount: number
   children: React.ReactNode
 }
 
@@ -46,6 +47,12 @@ const OWNER_NAV_ITEMS = [
   )},
 ]
 
+const ADMIN_NAV_ITEMS = [
+  { label: 'Admin Panel', href: '/dashboard/admin', icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+  )},
+]
+
 function initials(email: string) {
   return email ? email[0].toUpperCase() : '?'
 }
@@ -56,7 +63,7 @@ function roleLabel(role: string) {
   return 'Customer'
 }
 
-function NavLink({ href, icon, label, onClick }: { href: string; icon: React.ReactNode; label: string; onClick?: () => void }) {
+function NavLink({ href, icon, label, badge, onClick }: { href: string; icon: React.ReactNode; label: string; badge?: number; onClick?: () => void }) {
   const pathname = usePathname()
   const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
 
@@ -74,19 +81,28 @@ function NavLink({ href, icon, label, onClick }: { href: string; icon: React.Rea
         {icon}
       </span>
       <span>{label}</span>
-      {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />}
+      {badge && badge > 0 ? (
+        <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : active ? (
+        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70" />
+      ) : null}
     </Link>
   )
 }
 
-export default function AppShell({ email, role, restaurantIds, children }: Props) {
+export default function AppShell({ email, role, restaurantIds, adminPendingCount, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isPending, startTransition] = useTransition()
   const profileRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   const isOwner = role === 'restaurant_owner' || role === 'admin'
-  const allNav = [...NAV_ITEMS, ...(isOwner ? OWNER_NAV_ITEMS : [])]
+  const isAdmin = role === 'admin'
+  const allNav = [...NAV_ITEMS, ...(isOwner ? OWNER_NAV_ITEMS : []), ...(isAdmin ? ADMIN_NAV_ITEMS : [])]
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -119,7 +135,14 @@ export default function AppShell({ email, role, restaurantIds, children }: Props
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest px-3 mb-2">Menu</p>
         {allNav.map(({ label, href, icon }) => (
-          <NavLink key={href} href={href} icon={icon} label={label} onClick={() => setSidebarOpen(false)} />
+          <NavLink
+            key={href}
+            href={href}
+            icon={icon}
+            label={label}
+            badge={href === '/dashboard/admin' ? adminPendingCount : undefined}
+            onClick={() => setSidebarOpen(false)}
+          />
         ))}
       </nav>
 
@@ -175,6 +198,28 @@ export default function AppShell({ email, role, restaurantIds, children }: Props
             </div>
             <span className="font-black text-gray-900 dark:text-white">SnapBite</span>
           </div>
+
+          <form
+            className="flex-1 max-w-sm mx-2 hidden sm:flex"
+            onSubmit={e => {
+              e.preventDefault()
+              const q = searchQuery.trim()
+              if (q) router.push(`/search?q=${encodeURIComponent(q)}`)
+            }}
+          >
+            <div className="relative w-full">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <circle cx="11" cy="11" r="8"/><path strokeLinecap="round" d="M21 21l-4.35-4.35"/>
+              </svg>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search restaurants…"
+                className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-100/80 dark:bg-white/10 border border-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-300 dark:text-white placeholder-gray-400 transition-all"
+              />
+            </div>
+          </form>
 
           <div className="flex-1" />
 
