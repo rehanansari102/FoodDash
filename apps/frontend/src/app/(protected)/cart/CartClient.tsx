@@ -64,7 +64,7 @@ export default function CartClient({ initialCart }: { initialCart: Cart | null }
     )
   }
 
-  const deliveryFee = 30
+  const deliveryFee = cart.deliveryFee
   const total = cart.subtotal + deliveryFee
 
   return (

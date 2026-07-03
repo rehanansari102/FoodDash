@@ -34,7 +34,7 @@ export default function CheckoutClient({
   const [promoError, setPromoError] = useState('')
   const [promoLoading, setPromoLoading] = useState(false)
 
-  const deliveryFee = 30
+  const deliveryFee = cart.deliveryFee
   const discount = appliedPromo?.discount ?? 0
   const total = cart.subtotal + deliveryFee - discount
 

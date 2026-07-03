@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
+import { getQueueToken } from '@nestjs/bullmq';
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { Order, OrderStatus, PaymentStatus, PaymentMethod } from './schemas/order.schema';
 import { CartService } from './cart.service';
 import { OrderGateway } from './order.gateway';
-import { MailService } from './mail.service';
-import { PaymentService } from './payment.service';
 import { PromoCodeService } from './promo-code.service';
+import { ORDER_EVENTS_QUEUE } from './queue/order-events.constants';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -60,9 +60,8 @@ describe('OrderService', () => {
         OrderService,
         { provide: getModelToken(Order.name), useValue: orderModel },
         { provide: CartService,     useValue: { getCart: jest.fn(), clearCart: jest.fn() } },
-        { provide: OrderGateway,    useValue: { emitNewOrder: jest.fn() } },
-        { provide: MailService,     useValue: { sendNewOrderToOwner: jest.fn().mockResolvedValue(undefined), sendOrderStatusToCustomer: jest.fn().mockResolvedValue(undefined) } },
-        { provide: PaymentService,     useValue: { refundOrder: jest.fn().mockResolvedValue(undefined) } },
+        { provide: OrderGateway,    useValue: { emitNewOrder: jest.fn(), emitOrderStatus: jest.fn() } },
+        { provide: getQueueToken(ORDER_EVENTS_QUEUE), useValue: { add: jest.fn().mockResolvedValue(undefined) } },
         { provide: PromoCodeService,   useValue: { validate: jest.fn().mockResolvedValue({ discountAmount: 0, promoCode: '' }), recordUsage: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();

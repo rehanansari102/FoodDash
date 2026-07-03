@@ -111,6 +111,7 @@ export class MailService {
       this.logger.log(`New order email sent to owner ${order.ownerEmail} for order ${order._id}`);
     } catch (err) {
       this.logger.error(`Failed to send new order email for ${order._id}`, err);
+      throw err; // let the queue retry
     }
   }
 
@@ -196,6 +197,7 @@ export class MailService {
       this.logger.log(`Status email (${status}) sent to customer ${order.customerEmail} for order ${order._id}`);
     } catch (err) {
       this.logger.error(`Failed to send status email for order ${order._id}`, err);
+      throw err; // let the queue retry
     }
   }
 }

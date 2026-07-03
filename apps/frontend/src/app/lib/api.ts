@@ -537,6 +537,7 @@ export interface Cart {
   restaurantName: string
   items: CartItem[]
   subtotal: number
+  deliveryFee: number
 }
 
 export interface DeliveryAddress {

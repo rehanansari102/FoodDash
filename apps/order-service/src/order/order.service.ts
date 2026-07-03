@@ -5,15 +5,16 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { InjectQueue } from '@nestjs/bullmq';
 import { Model } from 'mongoose';
+import { Queue } from 'bullmq';
 import { Order, OrderDocument, OrderStatus } from './schemas/order.schema';
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { CartService } from './cart.service';
 import { OrderGateway } from './order.gateway';
-import { MailService } from './mail.service';
-import { PaymentService } from './payment.service';
 import { PromoCodeService } from './promo-code.service';
+import { ORDER_EVENTS_QUEUE } from './queue/order-events.constants';
 
 // Allowed status transitions per actor
 const CUSTOMER_TRANSITIONS: Partial<Record<OrderStatus, OrderStatus>> = {
@@ -50,10 +51,9 @@ export class OrderService {
 
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
+    @InjectQueue(ORDER_EVENTS_QUEUE) private orderEventsQueue: Queue,
     private cartService: CartService,
     private orderGateway: OrderGateway,
-    private mailService: MailService,
-    private paymentService: PaymentService,
     private promoCodeService: PromoCodeService,
   ) {
     this.platformFeePercent = Number(process.env.PLATFORM_FEE_PERCENT ?? 10);
@@ -88,7 +88,10 @@ export class OrderService {
       throw new BadRequestException('Cart is empty');
     }
 
-    const DELIVERY_FEE = 30;
+    // Delivery fee is fixed to the restaurant's configured rate at the moment the
+    // cart was created (cart.service.ts fetches it from restaurant-service) — never
+    // a client-supplied or hardcoded value.
+    const deliveryFee = cart.deliveryFee ?? 30;
     const subtotal = cart.subtotal;
 
     // Validate promo code if provided
@@ -100,7 +103,7 @@ export class OrderService {
       appliedPromoCode = promo.promoCode;
     }
 
-    const total = subtotal + DELIVERY_FEE - discountAmount;
+    const total = subtotal + deliveryFee - discountAmount;
     const platformFee = Math.round(subtotal * this.platformFeePercent) / 100;
     const restaurantEarnings = subtotal - platformFee;
 
@@ -121,7 +124,7 @@ export class OrderService {
       })),
       deliveryAddress: dto.deliveryAddress,
       subtotal,
-      deliveryFee: DELIVERY_FEE,
+      deliveryFee,
       discountAmount,
       promoCode: appliedPromoCode,
       total,
@@ -136,9 +139,9 @@ export class OrderService {
 
     const placed = order.toObject() as unknown as Order & { _id: string };
 
-    // Fire-and-forget: WebSocket + email (don't block the response)
+    // Fire-and-forget: WebSocket push is instant; email is queued for reliable delivery with retry
     this.orderGateway.emitNewOrder(cart.restaurantId, sanitizeOrder(placed));
-    this.mailService.sendNewOrderToOwner(placed).catch(() => null);
+    this.orderEventsQueue.add('new-order-email', { order: placed }).catch(() => null);
     if (appliedPromoCode) {
       this.promoCodeService.recordUsage(appliedPromoCode).catch(() => null);
     }
@@ -259,18 +262,18 @@ export class OrderService {
       cancelReason: (updated as any)?.cancelReason,
     });
 
-    // Fire-and-forget Stripe refund — if it fails the order is still cancelled
+    // Stripe refund on cancellation — queued with retry; order stays CANCELLED even if this fails
     if (next === OrderStatus.CANCELLED) {
-      this.paymentService.refundOrder(orderId).catch(() => null);
+      this.orderEventsQueue.add('refund', { orderId }).catch(() => null);
     }
 
-    // Fire-and-forget customer status email
+    // Customer status email — queued with retry
     const NOTIFY_STATUSES = [
       OrderStatus.CONFIRMED, OrderStatus.PREPARING, OrderStatus.READY,
       OrderStatus.PICKED_UP, OrderStatus.DELIVERED, OrderStatus.CANCELLED,
     ];
     if (NOTIFY_STATUSES.includes(next)) {
-      this.mailService.sendOrderStatusToCustomer(updated as any, next).catch(() => null);
+      this.orderEventsQueue.add('status-email', { order: updated, status: next }).catch(() => null);
     }
 
     return sanitizeOrder(updated) as unknown as Order;

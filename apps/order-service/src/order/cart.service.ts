@@ -15,9 +15,11 @@ export interface Cart {
   restaurantName: string;
   items: CartItem[];
   subtotal: number;
+  deliveryFee: number;
 }
 
 const CART_TTL = 60 * 60 * 24; // 24 hours
+const DEFAULT_DELIVERY_FEE = 30;
 
 @Injectable()
 export class CartService {
@@ -25,6 +27,21 @@ export class CartService {
 
   private cartKey(userId: string) {
     return `cart:${userId}`;
+  }
+
+  // Authoritative delivery fee from restaurant-service — never trust a client-supplied value
+  // for anything that affects the charged total.
+  private async fetchDeliveryFee(restaurantId: string): Promise<number> {
+    const url = process.env.RESTAURANT_SERVICE_URL;
+    if (!url) return DEFAULT_DELIVERY_FEE;
+    try {
+      const res = await fetch(`${url}/restaurants/${restaurantId}`);
+      if (!res.ok) return DEFAULT_DELIVERY_FEE;
+      const data = await res.json() as { deliveryFee?: number };
+      return typeof data.deliveryFee === 'number' ? data.deliveryFee : DEFAULT_DELIVERY_FEE;
+    } catch {
+      return DEFAULT_DELIVERY_FEE;
+    }
   }
 
   async getCart(userId: string): Promise<Cart | null> {
@@ -48,6 +65,7 @@ export class CartService {
       restaurantName: dto.restaurantName,
       items: [],
       subtotal: 0,
+      deliveryFee: await this.fetchDeliveryFee(dto.restaurantId),
     };
 
     const idx = existing.items.findIndex((i) => i.menuItemId === dto.menuItemId);
