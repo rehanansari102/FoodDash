@@ -7,6 +7,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { internalHeaders } from '@snapbite/common-guards';
 import { Order, OrderDocument } from './schemas/order.schema';
 import { verifyJwt, parseCookieToken } from './jwt.util';
 
@@ -84,7 +85,9 @@ export class OrderGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const url = process.env.RESTAURANT_SERVICE_URL;
         if (!url) { client.disconnect(); return; }
         try {
-          const res = await fetch(`${url}/restaurants/${restaurantId}`);
+          const res = await fetch(`${url}/restaurants/${restaurantId}`, {
+            headers: internalHeaders(),
+          });
           if (!res.ok) { client.disconnect(); return; }
           const data = await res.json() as { ownerId?: string };
           if (data.ownerId !== payload.sub) { client.disconnect(); return; }

@@ -8,6 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Model } from 'mongoose';
 import { Queue } from 'bullmq';
+import { internalHeaders } from '@snapbite/common-guards';
 import { Order, OrderDocument, OrderStatus } from './schemas/order.schema';
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -64,7 +65,9 @@ export class OrderService {
     const url = process.env.RESTAURANT_SERVICE_URL;
     if (!url) return {};
     try {
-      const res = await fetch(`${url}/restaurants/${restaurantId}`);
+      const res = await fetch(`${url}/restaurants/${restaurantId}`, {
+        headers: internalHeaders(),
+      });
       if (!res.ok) return {};
       const data = await res.json() as { ownerEmail?: string; ownerId?: string };
       return { ownerEmail: data.ownerEmail, ownerId: data.ownerId };
@@ -396,7 +399,9 @@ export class OrderService {
     // Fetch all active drivers from auth-service
     let allDrivers: { id: string; email: string }[] = [];
     try {
-      const res = await fetch(`${authUrl}/auth/internal/drivers`);
+      const res = await fetch(`${authUrl}/auth/internal/drivers`, {
+        headers: internalHeaders(),
+      });
       if (!res.ok) return [];
       allDrivers = await res.json() as { id: string; email: string }[];
     } catch {

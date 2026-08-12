@@ -12,6 +12,9 @@ import { HealthModule } from './health/health.module';
       validationSchema: Joi.object({
         PORT:                  Joi.number().default(3000),
         JWT_SECRET:            Joi.string().required(),
+        INTERNAL_API_SECRET:   Joi.string().when('NODE_ENV', {
+          is: 'production', then: Joi.required(), otherwise: Joi.optional(),
+        }),
         CORS_ORIGIN:           Joi.string().default('*'),
         AUTH_SERVICE_URL:      Joi.string().required(),
         RESTAURANT_SERVICE_URL: Joi.string().required(),

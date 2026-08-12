@@ -1,7 +1,6 @@
 # ── Stage 1: Build ──────────────────────────────────────────
 FROM node:22-alpine AS builder
 RUN corepack enable
-RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 # Manifests first so the dependency layer stays cached when only source changes.
@@ -20,19 +19,18 @@ COPY apps/order-service/package.json ./apps/order-service/
 COPY apps/restaurant-service/package.json ./apps/restaurant-service/
 COPY apps/user-service/package.json ./apps/user-service/
 
-RUN pnpm install --frozen-lockfile --filter @snapbite/auth-service...
+RUN pnpm install --frozen-lockfile --filter @snapbite/order-service...
 
 COPY tsconfig.base.json turbo.json ./
 COPY packages ./packages
-COPY apps/auth-service ./apps/auth-service
+COPY apps/order-service ./apps/order-service
 
 # The trailing "..." also builds the workspace packages this service depends on.
-RUN pnpm --filter @snapbite/auth-service... run build
+RUN pnpm --filter @snapbite/order-service... run build
 
 # ── Stage 2: Production ─────────────────────────────────────
 FROM node:22-alpine AS runner
 RUN corepack enable
-RUN apk add --no-cache python3 make g++
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -51,11 +49,11 @@ COPY apps/order-service/package.json ./apps/order-service/
 COPY apps/restaurant-service/package.json ./apps/restaurant-service/
 COPY apps/user-service/package.json ./apps/user-service/
 
-RUN pnpm install --frozen-lockfile --prod --filter @snapbite/auth-service...
+RUN pnpm install --frozen-lockfile --prod --filter @snapbite/order-service...
 
 COPY --from=builder /app/packages/common-guards/dist ./packages/common-guards/dist
-COPY --from=builder /app/apps/auth-service/dist ./apps/auth-service/dist
-COPY packages/proto ./packages/proto
-EXPOSE 3001
-# Render injects PORT; main.ts reads it and falls back to 3001 locally.
-CMD ["node", "apps/auth-service/dist/main"]
+COPY --from=builder /app/apps/order-service/dist ./apps/order-service/dist
+
+EXPOSE 3005
+# Render injects PORT; main.ts reads it and falls back to 3005 locally.
+CMD ["node", "apps/order-service/dist/main"]

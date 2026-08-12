@@ -1,0 +1,234 @@
+# ─────────────────────────────────────────────────────────────
+#  SnapBite — Render Blueprint
+#
+#  Data stores are external and must exist before the first deploy:
+#    PostgreSQL → Neon    (DATABASE_URL,  auth-service)
+#    MongoDB    → Atlas   (MONGODB_URI,   user/restaurant/menu/order)
+#    Redis      → Upstash (REDIS_URL,     auth/user/restaurant/menu/order)
+#
+#  Every service is a public web service, so the downstream microservices are
+#  protected by InternalAuthGuard: they reject any request that does not carry
+#  INTERNAL_API_SECRET. That secret is generated once on snapbite-gateway and
+#  referenced by the others, so the values always match.
+#
+#  ⚠️  The *_SERVICE_URL / APP_URL / CORS_ORIGIN values below assume Render grants
+#  each service its exact `<name>.onrender.com` subdomain. Those subdomains are
+#  globally unique — if any is taken, Render appends a suffix and you must update
+#  the affected URLs in the dashboard. Verify all of them after the first deploy.
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Auth service — PostgreSQL, runs its TypeORM migrations on boot ─────────
+  - type: web
+    name: snapbite-auth
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/auth-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Generated here and reused by the gateway and order-service so all three
+      # sign and verify the same tokens.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: INTERNAL_API_SECRET
+        fromService: { name: snapbite-gateway, type: web, envVarKey: INTERNAL_API_SECRET }
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: APP_URL
+        value: https://snapbite-frontend.onrender.com
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_FROM_EMAIL
+        sync: false
+
+  # ── User service ──────────────────────────────────────────────────────────
+  - type: web
+    name: snapbite-user
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/user-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: INTERNAL_API_SECRET
+        fromService: { name: snapbite-gateway, type: web, envVarKey: INTERNAL_API_SECRET }
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  # ── Restaurant service ────────────────────────────────────────────────────
+  - type: web
+    name: snapbite-restaurant
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/restaurant-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: INTERNAL_API_SECRET
+        fromService: { name: snapbite-gateway, type: web, envVarKey: INTERNAL_API_SECRET }
+      - key: ORDER_SERVICE_URL
+        value: https://snapbite-order.onrender.com
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  # ── Menu service ──────────────────────────────────────────────────────────
+  - type: web
+    name: snapbite-menu
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/menu-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: INTERNAL_API_SECRET
+        fromService: { name: snapbite-gateway, type: web, envVarKey: INTERNAL_API_SECRET }
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  # ── Order service — also serves the customer-facing WebSocket namespace ────
+  - type: web
+    name: snapbite-order
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/order-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        fromService: { name: snapbite-auth, type: web, envVarKey: JWT_SECRET }
+      - key: INTERNAL_API_SECRET
+        fromService: { name: snapbite-gateway, type: web, envVarKey: INTERNAL_API_SECRET }
+      # Browsers open the socket directly against this service, so its CORS
+      # origin must name the frontend rather than the gateway.
+      - key: CORS_ORIGIN
+        value: https://snapbite-frontend.onrender.com
+      - key: RESTAURANT_SERVICE_URL
+        value: https://snapbite-restaurant.onrender.com
+      - key: AUTH_SERVICE_URL
+        value: https://snapbite-auth.onrender.com
+      - key: PLATFORM_FEE_PERCENT
+        value: "10"
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_FROM_EMAIL
+        sync: false
+
+  # ── Media service — Cloudflare R2 presigned uploads ───────────────────────
+  - type: web
+    name: snapbite-media
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/media-service/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: INTERNAL_API_SECRET
+        fromService: { name: snapbite-gateway, type: web, envVarKey: INTERNAL_API_SECRET }
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: MEDIA_PUBLIC_BASE_URL
+        sync: false
+
+  # ── API gateway — the only backend the browser is meant to talk to ────────
+  - type: web
+    name: snapbite-gateway
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/api-gateway/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Single source of truth for the shared secret; every other service
+      # references this value.
+      - key: INTERNAL_API_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        fromService: { name: snapbite-auth, type: web, envVarKey: JWT_SECRET }
+      - key: CORS_ORIGIN
+        value: https://snapbite-frontend.onrender.com
+      - key: AUTH_SERVICE_URL
+        value: https://snapbite-auth.onrender.com
+      - key: USER_SERVICE_URL
+        value: https://snapbite-user.onrender.com
+      - key: RESTAURANT_SERVICE_URL
+        value: https://snapbite-restaurant.onrender.com
+      - key: MENU_SERVICE_URL
+        value: https://snapbite-menu.onrender.com
+      - key: ORDER_SERVICE_URL
+        value: https://snapbite-order.onrender.com
+      - key: MEDIA_SERVICE_URL
+        value: https://snapbite-media.onrender.com
+
+  # ── Frontend — Next.js standalone ─────────────────────────────────────────
+  # NEXT_PUBLIC_* are inlined into the client bundle at build time. Render
+  # exposes service env vars as Docker build args, which the Dockerfile picks up
+  # via matching ARG declarations. Changing one requires a rebuild, not a restart.
+  - type: web
+    name: snapbite-frontend
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./apps/frontend/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_GATEWAY_URL
+        value: https://snapbite-gateway.onrender.com
+      - key: NEXT_PUBLIC_ORDER_SERVICE_WS
+        value: https://snapbite-order.onrender.com
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_MEDIA_BASE_URL
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false

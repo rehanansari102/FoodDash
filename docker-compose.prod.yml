@@ -7,7 +7,7 @@ name: snapbite
 #  MongoDB    → Atlas        (MONGODB_URI in each service .env)
 #  Usage: docker-compose -f docker-compose.prod.yml up -d
 #         (shortcut: pnpm prod:up)
-#  Required env vars: JWT_SECRET, APP_URL
+#  Required env vars: JWT_SECRET, APP_URL, INTERNAL_API_SECRET
 #
 #  Network topology:
 #    internet → frontend:3010 → api-gateway:3000 → microservices
@@ -30,6 +30,7 @@ services:
       - ./apps/auth-service/.env
     environment:
       NODE_ENV: production
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     networks:
       - internal
     # no ports — only reachable by other containers on the internal network
@@ -45,6 +46,7 @@ services:
     environment:
       PORT: 3002
       NODE_ENV: production
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     networks:
       - internal
 
@@ -59,6 +61,7 @@ services:
     environment:
       PORT: 3003
       NODE_ENV: production
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     networks:
       - internal
 
@@ -73,6 +76,7 @@ services:
     environment:
       PORT: 3004
       NODE_ENV: production
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     networks:
       - internal
 
@@ -87,6 +91,7 @@ services:
     environment:
       PORT: 3005
       NODE_ENV: production
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     networks:
       - internal
 
@@ -101,6 +106,7 @@ services:
     environment:
       PORT: 3011
       NODE_ENV: production
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
     networks:
       - internal
 
@@ -115,6 +121,7 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: production
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET}
       JWT_SECRET: ${JWT_SECRET}
       AUTH_SERVICE_URL: http://fd-auth-service:3001
       AUTH_SERVICE_GRPC_URL: fd-auth-service:50051

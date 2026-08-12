@@ -174,6 +174,15 @@ pnpm --filter @snapbite/auth-service run test
 
 ---
 
+## Deployment
+
+The repo ships a Render Blueprint ([render.yaml](render.yaml)) that provisions all
+eight services from their Dockerfiles. See [DEPLOYMENT.md](DEPLOYMENT.md) for the
+data stores to create first, the secrets each service needs, and the free-plan
+trade-offs.
+
+---
+
 ## License
 
 MIT

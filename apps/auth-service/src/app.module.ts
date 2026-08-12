@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
+import { InternalAuthGuard } from '@snapbite/common-guards';
 import * as Joi from 'joi';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
@@ -16,6 +18,9 @@ import { RefreshToken } from './auth/entities/refresh-token.entity';
         PORT:                    Joi.number().default(3001),
         DATABASE_URL:            Joi.string().required(),
         JWT_SECRET:              Joi.string().required(),
+        INTERNAL_API_SECRET:     Joi.string().when('NODE_ENV', {
+          is: 'production', then: Joi.required(), otherwise: Joi.optional(),
+        }),
         JWT_ACCESS_EXPIRES_IN:   Joi.string().default('15m'),
         JWT_REFRESH_EXPIRES_IN:  Joi.string().default('7d'),
         BREVO_API_KEY:           Joi.string().required(),
@@ -29,7 +34,9 @@ import { RefreshToken } from './auth/entities/refresh-token.entity';
         type: 'postgres',
         url: config.getOrThrow('DATABASE_URL'),
         entities: [User, RefreshToken],
-        synchronize: config.get('NODE_ENV') !== 'production',
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        migrationsRun: true,
+        synchronize: false,
         logging: config.get('NODE_ENV') === 'development',
       }),
     }),
@@ -44,5 +51,6 @@ import { RefreshToken } from './auth/entities/refresh-token.entity';
     AuthModule,
     HealthModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: InternalAuthGuard }],
 })
 export class AppModule {}

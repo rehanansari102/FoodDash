@@ -1,5 +1,6 @@
 import { All, Controller, Req, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { internalHeaders } from '@snapbite/common-guards';
 import { Request, Response } from 'express';
 
 const ROUTE_MAP: Record<string, string> = {
@@ -46,9 +47,11 @@ export class ProxyController {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 10_000);
    
-      const headers: Record<string, string> = {
+      // internalHeaders attaches the shared secret proving this request came from
+      // the gateway — downstream services reject anything without it.
+      const headers: Record<string, string> = internalHeaders({
         'content-type': req.headers['content-type'] ?? 'application/json',
-      };
+      });
      
       if (req.headers['authorization']) headers['authorization'] = req.headers['authorization'] as string;
       if (req.headers['cookie']) headers['cookie'] = req.headers['cookie'] as string;

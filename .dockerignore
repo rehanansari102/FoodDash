@@ -1,7 +1,17 @@
-node_modules
-dist
-.env
-.env.local
-coverage
-*.log
+# Patterns without a glob only match at the repo root. The ** prefix is what
+# keeps nested copies out — a copied apps/*/node_modules overwrites the symlinks
+# pnpm created inside the image and breaks the build.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/*.log
+
+**/.env
+**/.env.local
+**/.env.*.local
+
 .git
+.github

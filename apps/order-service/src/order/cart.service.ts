@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { internalHeaders } from '@snapbite/common-guards';
 import { RedisService } from './redis.service';
 import { AddToCartDto, UpdateCartItemDto } from './dto/cart.dto';
 
@@ -35,7 +36,9 @@ export class CartService {
     const url = process.env.RESTAURANT_SERVICE_URL;
     if (!url) return DEFAULT_DELIVERY_FEE;
     try {
-      const res = await fetch(`${url}/restaurants/${restaurantId}`);
+      const res = await fetch(`${url}/restaurants/${restaurantId}`, {
+        headers: internalHeaders(),
+      });
       if (!res.ok) return DEFAULT_DELIVERY_FEE;
       const data = await res.json() as { deliveryFee?: number };
       return typeof data.deliveryFee === 'number' ? data.deliveryFee : DEFAULT_DELIVERY_FEE;

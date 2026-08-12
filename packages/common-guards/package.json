@@ -9,15 +9,11 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "typescript": "^5.4.5"
-  },
-  "peerDependencies": {
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0"
   },
   "devDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.0.0",
+    "@types/node": "^20.14.2",
     "typescript": "^5.4.5"
   }
 }

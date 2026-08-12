@@ -6,6 +6,7 @@ import {
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { ConfigService } from "@nestjs/config";
+import { internalHeaders } from "@snapbite/common-guards";
 import { Restaurant, RestaurantDocument } from "./schemas/restaurant.schema";
 import { CreateRestaurantDto } from "./dto/create-restaurant.dto";
 import { UpdateRestaurantDto } from "./dto/update-restaurant.dto";
@@ -106,10 +107,10 @@ export class RestaurantService {
   ) {
     const orderServiceUrl = this.configService.get("ORDER_SERVICE_URL");
     const res = await fetch(`${orderServiceUrl}/orders/${orderId}`, {
-      headers: {
+      headers: internalHeaders({
         'x-user-id': customerId,
         'x-user-role': 'customer',
-      },
+      }),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));

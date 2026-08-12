@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Public } from '@snapbite/common-guards';
 import { OrderService } from './order.service';
 import { CartService } from './cart.service';
 import { PaymentService } from './payment.service';
@@ -239,6 +240,9 @@ export class OrderController {
     return this.paymentService.confirmPayment(id, req.headers['x-user-id'], body.paymentIntentId);
   }
 
+  // Stripe calls this directly, so it cannot carry the internal secret. It
+  // authenticates itself via the webhook signature checked in handleWebhook.
+  @Public()
   @Post('stripe/webhook')
   @HttpCode(HttpStatus.OK)
   stripeWebhook(@Req() req: RawBodyRequest<Request>) {

@@ -1,35 +1,59 @@
 # ── Stage 1: Build ──────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
+RUN corepack enable
 WORKDIR /app
 
-COPY package.json ./
-COPY packages/common-guards/package.json ./packages/common-guards/package.json
-COPY packages/proto/package.json ./packages/proto/package.json
-COPY packages/shared-types/package.json ./packages/shared-types/package.json
-COPY apps/user-service/package.json ./apps/user-service/package.json
-COPY apps/auth-service/package.json ./apps/auth-service/package.json
-COPY apps/api-gateway/package.json ./apps/api-gateway/package.json
-COPY apps/frontend/package.json ./apps/frontend/package.json
-COPY apps/menu-service/package.json ./apps/menu-service/package.json
-COPY apps/restaurant-service/package.json ./apps/restaurant-service/package.json
-COPY apps/media-service/package.json ./apps/media-service/package.json
+# Manifests first so the dependency layer stays cached when only source changes.
+# pnpm needs every workspace manifest present to satisfy --frozen-lockfile.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/common-guards/package.json ./packages/common-guards/
+COPY packages/logger/package.json ./packages/logger/
+COPY packages/proto/package.json ./packages/proto/
+COPY packages/shared-types/package.json ./packages/shared-types/
+COPY apps/api-gateway/package.json ./apps/api-gateway/
+COPY apps/auth-service/package.json ./apps/auth-service/
+COPY apps/frontend/package.json ./apps/frontend/
+COPY apps/media-service/package.json ./apps/media-service/
+COPY apps/menu-service/package.json ./apps/menu-service/
+COPY apps/order-service/package.json ./apps/order-service/
+COPY apps/restaurant-service/package.json ./apps/restaurant-service/
+COPY apps/user-service/package.json ./apps/user-service/
 
-RUN npm install --legacy-peer-deps
+RUN pnpm install --frozen-lockfile --filter @snapbite/menu-service...
 
+COPY tsconfig.base.json turbo.json ./
+COPY packages ./packages
 COPY apps/menu-service ./apps/menu-service
-COPY tsconfig.base.json ./
 
-RUN npm run build --workspace=apps/menu-service
+# The trailing "..." also builds the workspace packages this service depends on.
+RUN pnpm --filter @snapbite/menu-service... run build
 
-# ── Stage 2: Production ──────────────────────────────────────
-FROM node:20-alpine AS runner
+# ── Stage 2: Production ─────────────────────────────────────
+FROM node:22-alpine AS runner
+RUN corepack enable
 WORKDIR /app
-
 ENV NODE_ENV=production
 
-COPY --from=builder /app/node_modules ./node_modules
+# Reinstall with --prod so the runtime image carries no build-time dependencies.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/common-guards/package.json ./packages/common-guards/
+COPY packages/logger/package.json ./packages/logger/
+COPY packages/proto/package.json ./packages/proto/
+COPY packages/shared-types/package.json ./packages/shared-types/
+COPY apps/api-gateway/package.json ./apps/api-gateway/
+COPY apps/auth-service/package.json ./apps/auth-service/
+COPY apps/frontend/package.json ./apps/frontend/
+COPY apps/media-service/package.json ./apps/media-service/
+COPY apps/menu-service/package.json ./apps/menu-service/
+COPY apps/order-service/package.json ./apps/order-service/
+COPY apps/restaurant-service/package.json ./apps/restaurant-service/
+COPY apps/user-service/package.json ./apps/user-service/
+
+RUN pnpm install --frozen-lockfile --prod --filter @snapbite/menu-service...
+
+COPY --from=builder /app/packages/common-guards/dist ./packages/common-guards/dist
 COPY --from=builder /app/apps/menu-service/dist ./apps/menu-service/dist
 
 EXPOSE 3004
-
+# Render injects PORT; main.ts reads it and falls back to 3004 locally.
 CMD ["node", "apps/menu-service/dist/main"]
