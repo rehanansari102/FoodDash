@@ -23,12 +23,17 @@ import { OrderEventsProcessor } from './queue/order-events.processor';
     ]),
     BullModule.forRootAsync({
       useFactory: (config: ConfigService) => {
-        const { hostname, port, password } = new URL(config.getOrThrow('REDIS_URL'));
+        const url = new URL(config.getOrThrow('REDIS_URL'));
         return {
           connection: {
-            host: hostname,
-            port: Number(port) || 6379,
-            password: password || undefined,
+            host: url.hostname,
+            port: Number(url.port) || 6379,
+            username: url.username || undefined,
+            password: url.password || undefined,
+            // Building the connection field-by-field discards the scheme, so TLS
+            // has to be re-derived. Managed Redis (Upstash) requires it; a local
+            // redis:// instance must not get it.
+            ...(url.protocol === 'rediss:' ? { tls: {} } : {}),
             // BullMQ workers use blocking Redis commands — maxRetriesPerRequest must be null
             maxRetriesPerRequest: null,
           },
