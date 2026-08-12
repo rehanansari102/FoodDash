@@ -21,10 +21,26 @@ Notes:
 
 - **Atlas network access** must allow `0.0.0.0/0`. Render does not publish static
   outbound IPs on the free plan.
-- **Upstash** must be the `rediss://` TLS URL. order-service parses it with `new URL()`
-  for BullMQ, so it needs the full scheme, host, port, and password.
-- The same MongoDB cluster and Redis instance can back all services; they use
-  separate keyspaces and collections.
+- **`MONGODB_URI` differs per service.** No service passes Mongoose a `dbName`, so
+  the database has to come from the URI path, and each service uses its own:
+
+  ```
+  …mongodb.net/snapbite_users?authSource=admin        # user-service
+  …mongodb.net/snapbite_restaurants?authSource=admin  # restaurant-service
+  …mongodb.net/snapbite_menus?authSource=admin        # menu-service
+  …mongodb.net/snapbite_orders?authSource=admin       # order-service
+  ```
+
+  `authSource=admin` is required. A database in the path also becomes the default
+  authentication database, and Atlas stores users in `admin` — omit it and every
+  connection fails with `bad auth : authentication failed`, even though the
+  credentials are correct. Omitting the database name instead is worse: Mongoose
+  silently writes everything to a database called `test`.
+- **Upstash** must be the `rediss://` TLS URL — two s's. It is TLS-only, and the
+  scheme is the only thing that tells ioredis to negotiate TLS; `redis://` fails
+  with a stream of `ECONNRESET` retries rather than a clear error.
+- One Atlas cluster and one Upstash instance back all services. Redis is shared
+  outright (distinct key prefixes); Mongo is separated by database name above.
 
 ## 2. Create the blueprint
 
