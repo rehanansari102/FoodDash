@@ -24,10 +24,13 @@ import mongoose from 'mongoose';
 
 // ── Config ───────────────────────────────────────────────────────────────────
 
+// All three default to the local dev stack. Override them to seed a deployed
+// environment, e.g. the Atlas/Neon databases behind Render.
 const PG_URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/snapbite_auth';
-const MONGO_BASE = 'mongodb://localhost:27018/?replicaSet=rs0&directConnection=true';
-const MONGO_RESTAURANTS_URL = `mongodb://localhost:27018/snapbite_restaurants?replicaSet=rs0&directConnection=true`;
-const MONGO_MENUS_URL = `mongodb://localhost:27018/snapbite_menus?replicaSet=rs0&directConnection=true`;
+const MONGO_RESTAURANTS_URL = process.env.MONGODB_URI_RESTAURANTS
+  ?? 'mongodb://localhost:27018/snapbite_restaurants?replicaSet=rs0&directConnection=true';
+const MONGO_MENUS_URL = process.env.MONGODB_URI_MENUS
+  ?? 'mongodb://localhost:27018/snapbite_menus?replicaSet=rs0&directConnection=true';
 
 // ── PostgreSQL setup ─────────────────────────────────────────────────────────
 
@@ -76,7 +79,9 @@ const CUSTOMER_EMAIL = 'customer@snapbite.dev';
 const ADMIN_EMAIL    = 'admin@snapbite.dev';
 const DRIVER1_EMAIL  = 'driver1@snapbite.dev';
 const DRIVER2_EMAIL  = 'driver2@snapbite.dev';
-const SEED_PASSWORD  = 'Password123!';
+// These accounts include an admin. On any internet-facing deployment, override
+// this — the default is public knowledge in this repo.
+const SEED_PASSWORD  = process.env.SEED_PASSWORD ?? 'Password123!';
 
 const WEEKDAYS = [
   { day: 0, open: '10:00', close: '22:00', isClosed: false },
