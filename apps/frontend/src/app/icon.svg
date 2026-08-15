@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="SnapBite">
+  <rect width="32" height="32" rx="8" fill="#f97316"/>
+  <!-- Burger silhouette in white — solid shapes so it stays legible at 16px. -->
+  <path d="M6.5 13.2C6.5 8.9 10.8 6 16 6s9.5 2.9 9.5 7.2z" fill="#fff"/>
+  <rect x="6" y="14.9" width="20" height="3.3" rx="1.65" fill="#fff"/>
+  <path d="M6.5 20.2h19c0 3.5-2.6 5.8-9.5 5.8s-9.5-2.3-9.5-5.8z" fill="#fff"/>
+</svg>
